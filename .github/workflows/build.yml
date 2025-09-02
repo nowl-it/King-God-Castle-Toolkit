@@ -56,7 +56,7 @@ jobs:
             - name: Build Tauri app
               uses: tauri-apps/tauri-action@v0
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   tagName: app-v__VERSION__
                   releaseName: 'App v__VERSION__'
@@ -68,33 +68,38 @@ jobs:
             - name: Prepare AUR PKGBUILD
               if: matrix.platform == 'ubuntu-22.04'
               run: |
-                  VERSION=$(jq -r .version < src-tauri/tauri.conf.json)
-                  ARCH=$(uname -m)
-                  PKGNAME=$(jq -r .identifier < src-tauri/tauri.conf.json)
-                  mkdir aur
-                  cat > aur/PKGBUILD << 'EOF'
-                  pkgname=$PKGNAME
-                  pkgver=$VERSION
-                  pkgrel=1
-                  pkgdesc="King God Castle Toolkit"
-                  arch=('x86_64' 'aarch64')
-                  url="https://github.com/${{ github.repository }}"
-                  license=('MIT')
-                  depends=('gtk3' 'libappindicator-gtk3')
-                  source=("${pkgname}-${pkgver}-${ARCH}.tar.zst::https://github.com/${{ github.repository }}/releases/download/app-v${pkgver}/${pkgname}-${pkgver}-${ARCH}.tar.zst")
-                  sha256sums=('SKIP')
-                  package() {
-                    install -Dm755 "${pkgname}-${pkgver}-${ARCH}.tar.zst" "$pkgdir/usr/bin/${pkgname}"
-                  }
-                  EOF
+               VERSION=$(jq -r .version < src-tauri/tauri.conf.json)
+               ARCH=$(uname -m)
+               PKGNAME=com.nowl.kgc-toolkit
+               mkdir -p aur
+               cat > aur/PKGBUILD << 'EOF'
+               pkgname=$PKGNAME
+               pkgver=$VERSION
+               pkgrel=1
+               pkgdesc="KGC Toolkit"
+               arch=('x86_64' 'aarch64')
+               url="https://github.com/${{ github.repository }}"
+               license=('MIT')
+               depends=('gtk3' 'libappindicator-gtk3')
+               source=("${pkgname}-${pkgver}-${ARCH}.tar.zst::${pkgname}-${pkgver}-${ARCH}.tar.zst")
+               sha256sums=('SKIP')
+               package() {
+                 install -Dm755 "${pkgname}-${pkgver}-${ARCH}.tar.zst" "$pkgdir/usr/bin/${pkgname}"
+               }
+               EOF
 
             - name: Package for AUR
               if: matrix.platform == 'ubuntu-22.04'
               run: |
-                  mkdir -p aur/src
-                  VERSION=$(jq -r .version < src-tauri/tauri.conf.json)
-                  ARCH=$(uname -m)
-                  cp target/release/${{ matrix.args == '' && 'com.nowl.kgc-toolkit' || '' }} aur/src/com.nowl.kgc-toolkit-${VERSION}-${ARCH}.tar.zst
-                  cd aur
-                  tar czf ${PKGNAME}-${VERSION}.tar.gz PKGBUILD src
-                  ls -lah
+               VERSION=$(jq -r .version < src-tauri/tauri.conf.json)
+               ARCH=$(uname -m)
+               BINARY=com.nowl.kgc-toolkit
+               mkdir -p aur/src
+               # Copy the Tauri‐built binary
+               cp src-tauri/target/release/$BINARY aur/src/
+               # Create the .tar.zst archive
+               cd aur/src
+               tar -cJf ../${BINARY}-${VERSION}-${ARCH}.tar.zst $BINARY
+               cd ..
+               tar czf ${BINARY}-${VERSION}.tar.gz PKGBUILD src
+               ls -lah aur
