@@ -80,17 +80,21 @@ jobs:
                   pacman -Syu --noconfirm
                   pacman -S --noconfirm base-devel git nodejs npm rustup webkit2gtk-4.1 gtk3 libayatana-appindicator patchelf librsvg xdg-utils desktop-file-utils wget curl fuse2
 
-            - name: Install linuxdeploy for AppImage
+            - name: Install AppImageTool for AppImage bundling
               run: |
-                  # Download linuxdeploy
-                  wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy
-                  chmod +x linuxdeploy
+                  # Download AppImageTool
+                  wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+                  chmod +x appimagetool
 
                   # Move to PATH
-                  mv linuxdeploy /usr/local/bin/
+                  mv appimagetool /usr/local/bin/
 
-                  # Create symlink để Tauri tìm thấy
-                  ln -sf /usr/local/bin/linuxdeploy /usr/bin/linuxdeploy || true
+                  # Create symlinks để Tauri có thể tìm thấy
+                  ln -sf /usr/local/bin/appimagetool /usr/bin/appimagetool || true
+                  ln -sf /usr/local/bin/appimagetool /usr/bin/linuxdeploy || true
+
+                  # Verify installation
+                  /usr/local/bin/appimagetool --help || echo "AppImageTool installed but help failed"
 
             - name: Checkout repository
               uses: actions/checkout@v4
