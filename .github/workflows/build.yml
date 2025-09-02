@@ -78,7 +78,7 @@ jobs:
             - name: Update system and install dependencies
               run: |
                   pacman -Syu --noconfirm
-                  pacman -S --noconfirm base-devel git nodejs npm rustup webkit2gtk-4.1 gtk3 libayatana-appindicator patchelf librsvg
+                  pacman -S --noconfirm base-devel git nodejs npm rustup webkit2gtk-4.1 gtk3 libayatana-appindicator patchelf librsvg xdg-utils desktop-file-utils
 
             - name: Checkout repository
               uses: actions/checkout@v4
