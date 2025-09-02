@@ -1,0 +1,2 @@
+# Track large binary files with Git LFS
+src-tauri/binaries/**/* filter=lfs diff=lfs merge=lfs -text
