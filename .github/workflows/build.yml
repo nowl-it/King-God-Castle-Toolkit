@@ -78,7 +78,19 @@ jobs:
             - name: Update system and install dependencies
               run: |
                   pacman -Syu --noconfirm
-                  pacman -S --noconfirm base-devel git nodejs npm rustup webkit2gtk-4.1 gtk3 libayatana-appindicator patchelf librsvg xdg-utils desktop-file-utils
+                  pacman -S --noconfirm base-devel git nodejs npm rustup webkit2gtk-4.1 gtk3 libayatana-appindicator patchelf librsvg xdg-utils desktop-file-utils wget curl fuse2
+
+            - name: Install linuxdeploy for AppImage
+              run: |
+                  # Download linuxdeploy
+                  wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy
+                  chmod +x linuxdeploy
+
+                  # Move to PATH
+                  mv linuxdeploy /usr/local/bin/
+
+                  # Create symlink để Tauri tìm thấy
+                  ln -sf /usr/local/bin/linuxdeploy /usr/bin/linuxdeploy || true
 
             - name: Checkout repository
               uses: actions/checkout@v4
