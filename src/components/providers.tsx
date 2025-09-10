@@ -1,8 +1,8 @@
 'use client';
 
-import { Spinner } from '@/components/ui/spinner';
-import { isServer, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { invoke } from '@tauri-apps/api/core';
+import { isServer, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactNode } from 'react';
+import TitleAppProvider from './titleAppProvider';
 
 function makeQueryClient() {
 	return new QueryClient({
@@ -37,7 +37,11 @@ function getQueryClient() {
 	}
 }
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({ children }: { children: ReactNode }) {
 	const queryClient = getQueryClient();
-	return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+	return (
+		<QueryClientProvider client={queryClient}>
+			<TitleAppProvider>{children}</TitleAppProvider>
+		</QueryClientProvider>
+	);
 }

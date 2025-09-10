@@ -1,21 +1,19 @@
 'use client';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { APP_PACKAGE_ID } from '@/utils/consts';
+import { log } from '@/utils/logger';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import Link from 'next/link';
-
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-import { toast } from 'sonner';
-import { selectSavePath } from '@/lib/selectSavePath';
-
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { open } from '@tauri-apps/plugin-dialog';
 import { AlertCircleIcon } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
-// Ensure `useCallback` is called in a consistent order
 export default function Page() {
 	const [appPath, setAppPath] = useState<string | null>(null);
 	const [exportPath, setExportPath] = useState<string | null>(null);
@@ -23,7 +21,7 @@ export default function Page() {
 	const queryClient = useQueryClient();
 
 	const assetRipperCheckerQuery = useQuery({
-		queryKey: ['check_asset_ripper', process.env.NEXT_PUBLIC_APK_NAME],
+		queryKey: ['check_asset_ripper', APP_PACKAGE_ID],
 		queryFn: (): Promise<string[]> => invoke('check_asset_ripper'),
 		staleTime: 10 * 60 * 1000, // 10 minutes
 	});
@@ -40,6 +38,23 @@ export default function Page() {
 		onError: (error: Error) => {
 			toast('❌ Chuyển đổi thất bại!', {
 				description: error ? error.message : 'Có lỗi xảy ra khi chuyển đổi file',
+				duration: 5000,
+			});
+		},
+	});
+
+	// Test mutation để kiểm tra AssetRipper enhancement
+	const testMutation = useMutation({
+		mutationFn: () => invoke('test_asset_ripper_enhancement') as Promise<string>,
+		onSuccess: (result: string) => {
+			toast('🎉 Test thành công!', {
+				description: result,
+				duration: 5000,
+			});
+		},
+		onError: (error: Error) => {
+			toast('❌ Test thất bại!', {
+				description: error ? error.message : 'Có lỗi xảy ra khi test',
 				duration: 5000,
 			});
 		},
@@ -85,7 +100,7 @@ export default function Page() {
 		);
 	}
 
-	// Error state - Versions loading failed
+	// Error state - AssetRipper not available
 	if (assetRipperCheckerQuery && assetRipperCheckerQuery.error) {
 		return (
 			<section className='flex h-full w-full flex-col items-center justify-center'>
@@ -101,7 +116,7 @@ export default function Page() {
 						<Button
 							onClick={() =>
 								queryClient.invalidateQueries({
-									queryKey: ['AssetRipper_get_version', process.env.NEXT_PUBLIC_APK_NAME],
+									queryKey: ['AssetRipper_get_version', APP_PACKAGE_ID],
 								})
 							}
 							variant='destructive'
@@ -115,7 +130,11 @@ export default function Page() {
 	}
 
 	async function appPathCheck() {
-		const saveTo = await selectSavePath({ title: 'Chọn ứng dụng (.xapk)', directory: false });
+		const saveTo = await open({
+			title: 'Chọn ứng dụng (.xapk)',
+			directory: false,
+			multiple: false,
+		});
 		if (!saveTo) {
 			toast('⚠️ Bạn chưa chọn file.');
 			return;
@@ -124,7 +143,11 @@ export default function Page() {
 	}
 
 	async function exportPathCheck() {
-		const saveTo = await selectSavePath({ title: 'Chọn nơi lưu dự án Unity' });
+		const saveTo = await open({
+			title: 'Chọn nơi lưu dự án Unity',
+			directory: true,
+			multiple: false,
+		});
 		if (!saveTo) {
 			toast('⚠️ Bạn chưa chọn nơi lưu file.');
 			return;
@@ -144,7 +167,7 @@ export default function Page() {
 				outPath: exportPath,
 			});
 		} catch (error) {
-			console.error('Convert failed:', error);
+			log.error('Convert to Unity failed', 'C2UPage', { appPath, exportPath, error });
 		}
 	}
 
@@ -198,9 +221,9 @@ export default function Page() {
 					</Alert>
 					{!C2UMutation.isPending && (
 						<>
-							<div className='flex items-center justify-between w-full outline p-2 rounded space-x-6'>
+							<div className='flex w-full items-center justify-between space-x-6 rounded p-2 outline'>
 								{appPath ? (
-									<p className='text-sm truncate'>{appPath}</p>
+									<p className='truncate text-sm'>{appPath}</p>
 								) : (
 									<span className='text-sm text-gray-500'>Chưa chọn ứng dụng</span>
 								)}
@@ -208,9 +231,9 @@ export default function Page() {
 									Chọn ứng dụng (.xapk)
 								</Button>
 							</div>
-							<div className='flex items-center justify-between w-full outline p-2 rounded space-x-6'>
+							<div className='flex w-full items-center justify-between space-x-6 rounded p-2 outline'>
 								{exportPath ? (
-									<p className='text-sm truncate'>{exportPath}</p>
+									<p className='truncate text-sm'>{exportPath}</p>
 								) : (
 									<span className='text-sm text-gray-500'>Chưa chọn thư mục</span>
 								)}
@@ -220,6 +243,15 @@ export default function Page() {
 							</div>
 						</>
 					)}
+					<Button
+						type='button'
+						variant='secondary'
+						onClick={() => testMutation.mutate()}
+						disabled={testMutation.isPending}
+						className='w-full'
+					>
+						{testMutation.isPending ? 'Đang test...' : '🧪 Test AssetRipper Enhancement'}
+					</Button>
 					<Button
 						type='button'
 						variant='outline'

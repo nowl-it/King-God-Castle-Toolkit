@@ -1,32 +1,17 @@
-'use client';
-
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import Link from 'next/link';
 import { SiFacebook, SiGithub } from '@icons-pack/react-simple-icons';
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Spinner } from '@/components/ui/spinner';
+import { Metadata } from 'next';
+import Link from 'next/link';
+
+export const metadata: Metadata = {
+	title: 'About',
+	description: 'Công cụ hỗ trợ cho cộng đồng King God Castle Việt Nam.',
+};
 
 export default function Page() {
-	const changeTitleQuery = useQuery({
-		queryKey: ['change-title'],
-		queryFn: async () => {
-			const { getCurrentWindow } = await import('@tauri-apps/api/window');
-			await getCurrentWindow().setTitle('About - King God Castle Toolkit');
-		},
-	});
-
-	if (changeTitleQuery.isLoading) {
-		return (
-			<section className='flex h-full w-full items-center justify-center'>
-				<Spinner size='large' />
-			</section>
-		);
-	}
-
 	return (
 		<section className='from-primary-foreground to-primary-foreground/20 flex h-full w-full flex-col items-center justify-center bg-gradient-to-br px-4 py-12'>
 			<Card className='bg-background w-full max-w-md border-0 shadow-xl backdrop-blur-md'>

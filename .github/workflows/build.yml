@@ -64,3 +64,5 @@ jobs:
                   releaseDraft: true
                   prerelease: false
                   args: ${{ matrix.args }}
+                  tauriScript: NO_STRIP=true pnpm
+

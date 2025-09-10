@@ -7,10 +7,6 @@ const nextConfig: NextConfig = {
 		unoptimized: true,
 	},
 	distDir: "dist",
-	staticPageGenerationTimeout: 180,
-	experimental: {
-		cpus: 1
-	}
 };
 
 export default nextConfig;
