@@ -10,5 +10,14 @@
 	"arrowParens": "avoid",
 	"endOfLine": "lf",
 	"quoteProps": "as-needed",
-	"jsxSingleQuote": true
+	"jsxSingleQuote": true,
+	"plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"],
+	"overrides": [
+		{
+			"files": "*.rs",
+			"options": {
+				"plugins": ["prettier-plugin-rust"]
+			}
+		}
+	]
 }

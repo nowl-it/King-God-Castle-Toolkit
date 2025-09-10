@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import {
 	Card,
 	CardAction,
@@ -9,22 +10,20 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { invoke } from '@tauri-apps/api/core';
-import Link from 'next/link';
-import { z } from 'zod';
-
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-
-import { toast } from 'sonner';
-import { selectSavePath } from '@/lib/selectSavePath';
-
-import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { APP_PACKAGE_ID } from '@/utils/consts';
+import { log } from '@/utils/logger';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import Link from 'next/link';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const FormSchema = z.object({
 	version: z
@@ -45,18 +44,27 @@ export default function Page() {
 	});
 
 	const versionsQuery = useQuery({
-		queryKey: ['get_app_versions', process.env.NEXT_PUBLIC_APK_NAME],
+		queryKey: ['get_app_versions', APP_PACKAGE_ID],
 		queryFn: (): Promise<string[]> =>
 			invoke('get_app_versions', {
-				appName: process.env.NEXT_PUBLIC_APK_NAME,
+				appName: APP_PACKAGE_ID,
 			}),
 		staleTime: 10 * 60 * 1000, // 10 minutes
+		retry: 3, // Retry 3 times on failure
+		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
 	});
 
 	// Mutation để download
 	const downloadMutation = useMutation({
 		mutationFn: ({ appName, version, outPath }: { appName: string; version: string; outPath: string }) =>
 			invoke('download_app', { appName, version, outPath }),
+		onMutate: () => {
+			// Show loading toast
+			toast('🚀 Bắt đầu tải...', {
+				description: 'Đang tải file XAPK, vui lòng đợi...',
+				duration: 3000,
+			});
+		},
 		onSuccess: () => {
 			toast('🎉 Tải thành công!', {
 				description: `Đã lưu tại: ${savePath}`,
@@ -64,9 +72,41 @@ export default function Page() {
 			});
 		},
 		onError: (error: any) => {
+			log.error('Download error in install page', 'InstallPage', { error });
+
+			let errorMessage = 'Có lỗi xảy ra khi tải file';
+
+			if (error?.message) {
+				if (error.message.includes('timeout')) {
+					errorMessage = 'Tải file bị timeout. Vui lòng kiểm tra kết nối mạng và thử lại.';
+				} else if (error.message.includes('No buffer space available')) {
+					errorMessage = 'Hệ thống đang quá tải. Vui lòng đợi và thử lại sau.';
+				} else if (error.message.includes('network')) {
+					errorMessage = 'Lỗi kết nối mạng, kiểm tra internet của bạn';
+				} else {
+					errorMessage = error.message;
+				}
+			}
+
 			toast('❌ Tải thất bại!', {
-				description: error?.message || 'Có lỗi xảy ra khi tải file',
-				duration: 5000,
+				description: errorMessage,
+				duration: 6000, // Reduced duration since no retry info
+				action: {
+					label: 'Thử lại',
+					onClick: () => {
+						// Retry the download with the same parameters
+						const formData = form.getValues();
+						if (savePath && formData.version) {
+							setTimeout(() => {
+								downloadMutation.mutate({
+									appName: APP_PACKAGE_ID!,
+									version: formData.version,
+									outPath: savePath,
+								});
+							}, 2000); // Wait 2 seconds before retry
+						}
+					},
+				},
 			});
 		},
 	});
@@ -125,7 +165,7 @@ export default function Page() {
 						<Button
 							onClick={() =>
 								queryClient.invalidateQueries({
-									queryKey: ['apkeep_get_version', process.env.NEXT_PUBLIC_APK_NAME],
+									queryKey: ['apkeep_get_version', APP_PACKAGE_ID],
 								})
 							}
 							variant='destructive'
@@ -139,7 +179,18 @@ export default function Page() {
 	}
 
 	async function onSubmit(data: z.infer<typeof FormSchema>) {
-		const saveTo = await selectSavePath();
+		// Check if there's already a download in progress
+		if (downloadMutation.isPending) {
+			toast('⚠️ Đang có quá trình tải khác, vui lòng đợi.');
+			return;
+		}
+
+		const saveTo = await open({
+			directory: true,
+			multiple: false,
+			save: true,
+			title: 'Chọn nơi lưu file',
+		});
 		if (!saveTo) {
 			toast('⚠️ Bạn chưa chọn nơi lưu file.');
 			return;
@@ -147,14 +198,21 @@ export default function Page() {
 
 		setSavePath(saveTo);
 
+		// Show initial progress toast
+		toast('📦 Bắt đầu tải...', {
+			description: `Phiên bản: ${data.version}`,
+			duration: 3000,
+		});
+
 		try {
 			await downloadMutation.mutateAsync({
-				appName: process.env.NEXT_PUBLIC_APK_NAME!,
+				appName: APP_PACKAGE_ID!,
 				version: data.version,
 				outPath: saveTo,
 			});
 		} catch (error) {
-			console.error('Download failed:', error);
+			log.error('Download failed in install handler', 'InstallPage', { error });
+			// Error handling is done in the mutation onError callback
 		}
 	}
 
@@ -188,7 +246,9 @@ export default function Page() {
 											<SelectContent>
 												{versionsQuery.data?.map(version => {
 													if (!version.trim()) {
-														console.warn('Skipping empty version value');
+														log.warn('Skipping empty version value', 'InstallPage', {
+															version,
+														});
 														return null;
 													}
 													return (
@@ -214,7 +274,7 @@ export default function Page() {
 									</Button>
 									<Link
 										href='/tool/install'
-										className='text-xs text-center block mt-2 underline text-primary/60 hover:text-primary transition-colors duration-300'
+										className='text-primary/60 hover:text-primary mt-2 block text-center text-xs underline transition-colors duration-300'
 									>
 										Tải thêm phiên bản khác
 									</Link>

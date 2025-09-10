@@ -1,11 +1,11 @@
+'use client';
+
 import {
 	Menubar,
 	MenubarCheckboxItem,
 	MenubarContent,
 	MenubarItem,
 	MenubarMenu,
-	MenubarRadioGroup,
-	MenubarRadioItem,
 	MenubarSeparator,
 	MenubarShortcut,
 	MenubarSub,
@@ -13,33 +13,35 @@ import {
 	MenubarSubTrigger,
 	MenubarTrigger,
 } from '@/components/ui/menubar';
+import { useProjectStore } from '@/store/project/store';
+import { open } from '@tauri-apps/plugin-dialog';
 import Link from 'next/link';
+import { redirect, useRouter } from 'next/navigation';
 
 function MenubarComponent() {
+	const setPath = useProjectStore(store => store.setPath);
+	const router = useRouter();
+
+	async function openProject() {
+		const project_path = await open({
+			title: 'Open Project',
+			directory: true,
+			multiple: false,
+		});
+
+		if (project_path && typeof project_path === 'string') {
+			setPath(project_path);
+			redirect('/editor');
+		}
+	}
+
 	return (
-		<Menubar className='sticky top-0 z-40'>
+		<Menubar className='fixed top-0 z-40 w-full rounded-none'>
 			<MenubarMenu>
 				<MenubarTrigger>File</MenubarTrigger>
 				<MenubarContent>
-					<MenubarItem>
-						New Tab <MenubarShortcut>⌘T</MenubarShortcut>
-					</MenubarItem>
-					<MenubarItem>
-						New Window <MenubarShortcut>⌘N</MenubarShortcut>
-					</MenubarItem>
-					<MenubarItem disabled>New Incognito Window</MenubarItem>
-					<MenubarSeparator />
-					<MenubarSub>
-						<MenubarSubTrigger>Share</MenubarSubTrigger>
-						<MenubarSubContent>
-							<MenubarItem>Email link</MenubarItem>
-							<MenubarItem>Messages</MenubarItem>
-							<MenubarItem>Notes</MenubarItem>
-						</MenubarSubContent>
-					</MenubarSub>
-					<MenubarSeparator />
-					<MenubarItem>
-						Print... <MenubarShortcut>⌘P</MenubarShortcut>
+					<MenubarItem onClick={openProject}>
+						Open Project... <MenubarShortcut>⌘O</MenubarShortcut>
 					</MenubarItem>
 				</MenubarContent>
 			</MenubarMenu>
@@ -88,7 +90,7 @@ function MenubarComponent() {
 				</MenubarContent>
 			</MenubarMenu>
 			<MenubarMenu>
-				<MenubarTrigger>Tools</MenubarTrigger>
+				<MenubarTrigger>Tool</MenubarTrigger>
 				<MenubarContent>
 					<MenubarItem asChild>
 						<Link href='/tool/install'>Install Game</Link>
