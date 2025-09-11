@@ -4,7 +4,7 @@ mod logger;
 mod set_app_title;
 mod utils;
 
-use c2u::{c2u, test_asset_ripper_enhancement};
+use c2u::c2u;
 use file_watcher::{create_watcher_state, *};
 use logger::{clear_old_logs, ensure_log_directory, get_recent_logs, write_log_entry};
 use set_app_title::set_app_title;
@@ -22,7 +22,6 @@ pub fn run() {
             download_app,
             check_asset_ripper,
             c2u,
-            test_asset_ripper_enhancement,
             set_app_title,
             check_path_exists,
             check_is_directory,
