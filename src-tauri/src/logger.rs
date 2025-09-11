@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
-use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LogEntry {

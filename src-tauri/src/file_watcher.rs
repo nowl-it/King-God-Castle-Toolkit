@@ -21,13 +21,6 @@ pub struct FileNode {
     pub modified: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct FileSystemEvent {
-    pub event_type: String,
-    pub path: String,
-    pub tree: FileNode,
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FsEvent {
     paths: Vec<String>,
