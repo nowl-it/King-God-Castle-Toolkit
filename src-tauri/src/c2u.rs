@@ -5,20 +5,23 @@ use std::{
     process::Command,
 };
 
-use rlimit::{setrlimit, Resource};
 use zip::ZipArchive;
 
 use crate::get_asset_ripper;
 
 #[tauri::command]
 pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
-    match setrlimit(Resource::NOFILE, 16384, 16384) {
-        Ok(_) => {
-            if let Ok((curr, max)) = rlimit::getrlimit(Resource::NOFILE) {
-                println!("File limit set to: current = {}, max = {}", curr, max);
+    #[cfg(unix)]
+    {
+        use rlimit::{setrlimit, Resource};
+        match setrlimit(Resource::NOFILE, 16384, 16384) {
+            Ok(_) => {
+                if let Ok((curr, max)) = rlimit::getrlimit(Resource::NOFILE) {
+                    println!("File limit set to: current = {}, max = {}", curr, max);
+                }
             }
+            Err(e) => return Err(format!("Failed to set file limit: {}", e)),
         }
-        Err(e) => return Err(format!("Failed to set file limit: {}", e)),
     }
 
     let app_path = Path::new(&app_path).to_path_buf();
