@@ -43,23 +43,6 @@ export default function Page() {
 		},
 	});
 
-	// Test mutation để kiểm tra AssetRipper enhancement
-	const testMutation = useMutation({
-		mutationFn: () => invoke('test_asset_ripper_enhancement') as Promise<string>,
-		onSuccess: (result: string) => {
-			toast('🎉 Test thành công!', {
-				description: result,
-				duration: 5000,
-			});
-		},
-		onError: (error: Error) => {
-			toast('❌ Test thất bại!', {
-				description: error ? error.message : 'Có lỗi xảy ra khi test',
-				duration: 5000,
-			});
-		},
-	});
-
 	// Loading state
 	if (assetRipperCheckerQuery.isLoading) {
 		return (
@@ -243,15 +226,6 @@ export default function Page() {
 							</div>
 						</>
 					)}
-					<Button
-						type='button'
-						variant='secondary'
-						onClick={() => testMutation.mutate()}
-						disabled={testMutation.isPending}
-						className='w-full'
-					>
-						{testMutation.isPending ? 'Đang test...' : '🧪 Test AssetRipper Enhancement'}
-					</Button>
 					<Button
 						type='button'
 						variant='outline'
