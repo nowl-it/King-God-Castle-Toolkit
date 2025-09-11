@@ -96,24 +96,6 @@ pub fn is_code_file(filename: &str) -> bool {
         .map(|ext| CODE_EXTENSIONS.contains(&ext.as_str()))
         .unwrap_or(false)
 }
-
-/// Lấy file type category
-pub fn get_file_category(filename: &str) -> String {
-    if is_image_file(filename) {
-        "Image".to_string()
-    } else if is_video_file(filename) {
-        "Video".to_string()
-    } else if is_audio_file(filename) {
-        "Audio".to_string()
-    } else if is_document_file(filename) {
-        "Document".to_string()
-    } else if is_code_file(filename) {
-        "Code".to_string()
-    } else {
-        "Other".to_string()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
