@@ -27,15 +27,13 @@
 		"targets": "all",
 		"icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
 		"resources": ["binaries/**/*"],
-        "createUpdaterArtifacts": true
+		"createUpdaterArtifacts": true
 	},
-    "plugins": {
-        "updater": {
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERDM0VFMDlCN0NCREY1OApSV1JZMzh1M0NlN0REWUc1ZVo5cVk1Q01WVFhQUGFtNzVUaTZZc2J2S01HVEJOSmpFWjV2R3NXRwo=",
-            "endpoints": [
-                "https://github.com/nowl-it/King-God-Castle-Toolkit/releases/latest/download/latest.json"
-            ],
-            "dialog": true
-        }
-    }
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxQjY3M0U4MTkzMkREOUUKUldTZTNUSVo2SE8yWVMyUWNGTnFJOS9DUjI1eTdCMkRjWFlXNUZkNjdDY3Q2NjlJSzdBSTUvbjYK",
+			"endpoints": ["https://github.com/nowl-it/King-God-Castle-Toolkit/releases/latest/download/latest.json"],
+			"dialog": true
+		}
+	}
 }
