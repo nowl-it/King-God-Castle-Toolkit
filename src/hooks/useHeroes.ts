@@ -24,6 +24,8 @@ export function useHeroes() {
 		path: projectPath,
 		selectedHero,
 		setSelectedHero,
+		heroesLoading,
+		setHeroesLoading,
 		cacheHero,
 		getCachedHero,
 		isCacheValid,
@@ -242,12 +244,25 @@ export function useHeroes() {
 			try {
 				const cropInfo = await invoke<AssetCropInfo>('parse_asset_file', { assetContent });
 
-				// Use the combined avatar texture file instead of searching for individual files
-				const combinedTexturePath = `${projectPath}/ExportedProject/Assets/Texture2D/sactx-0-2048x1024-Uncompressed-UI_Avatar-9bc0a9d4.png`;
+				// Find the combined avatar texture file by pattern
+				const textureDir = `${projectPath}/ExportedProject/Assets/Texture2D`;
+				const textureFiles = await invoke<string[]>('read_directory', { path: textureDir });
 
+				// Look for file matching pattern: sactx-0-2048x1024-Uncompressed-UI_Avatar-<random_id>.png
+				const avatarTextureFile = textureFiles.find(file =>
+					file.match(/^sactx-0-2048x1024-Uncompressed-UI_Avatar-[a-f0-9]+\.png$/)
+				);
+
+				if (!avatarTextureFile) {
+					log.hero.error(hero.id, `Combined avatar texture not found in: ${textureDir}`);
+					log.hero.error(hero.id, `Available files:`, textureFiles);
+					return;
+				}
+
+				const combinedTexturePath = `${textureDir}/${avatarTextureFile}`;
 				log.hero.asset(hero.id, `Using combined texture: ${combinedTexturePath}`);
 
-				// Check if the combined texture file exists
+				// Check if the combined texture file exists (should exist since we found it)
 				const textureExists = await invoke<boolean>('check_path_exists', { path: combinedTexturePath });
 				if (!textureExists) {
 					log.hero.error(hero.id, `Combined avatar texture not found: ${combinedTexturePath}`);
@@ -327,6 +342,7 @@ export function useHeroes() {
 		}
 
 		setState(prev => ({ ...prev, loading: true, error: null }));
+		setHeroesLoading(true);
 
 		try {
 			const heroesPath = `${projectPath}/ExportedProject/Assets/01_Fx/1_Hero`;
@@ -341,6 +357,7 @@ export function useHeroes() {
 					error: 'Heroes directory not found: Assets/01_Fx/1_Hero',
 					heroes: [],
 				}));
+				setHeroesLoading(false);
 				return;
 			}
 
@@ -404,6 +421,7 @@ export function useHeroes() {
 				heroes,
 				error: null,
 			}));
+			setHeroesLoading(false);
 		} catch (error) {
 			log.error('Failed to load heroes', 'Heroes', error);
 			setState(prev => ({
@@ -412,6 +430,7 @@ export function useHeroes() {
 				error: error instanceof Error ? error.message : 'Failed to load heroes',
 				heroes: [],
 			}));
+			setHeroesLoading(false);
 		}
 	};
 
@@ -423,6 +442,8 @@ export function useHeroes() {
 	// Refresh heroes list (clear cache and reload)
 	const refreshHeroes = () => {
 		log.info('Refreshing heroes list and clearing cache', 'Heroes');
+		// Clear selected hero to force right panel to show loading
+		setSelectedHero(null);
 		clearHeroesCache();
 		loadHeroes();
 	};
@@ -550,6 +571,7 @@ export function useHeroes() {
 	return {
 		...state,
 		selectedHero,
+		heroesLoading,
 		loadHeroes,
 		selectHero,
 		refreshHeroes,

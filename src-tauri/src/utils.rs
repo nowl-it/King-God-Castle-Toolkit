@@ -27,7 +27,6 @@ pub fn get_asset_ripper() -> Option<String> {
 #[tauri::command]
 pub async fn get_app_versions(app_name: String) -> Result<Vec<String>, String> {
     use std::process::Command;
-    use std::time::Duration;
 
     println!("[Versions] Getting versions for app: {}", app_name);
 
@@ -44,7 +43,7 @@ pub async fn get_app_versions(app_name: String) -> Result<Vec<String>, String> {
 
     println!("[Versions] Executing command: {:?}", cmd);
 
-    // Add timeout to prevent hanging
+    // Execute apkeep command without timeout
     let versions_future = tokio::task::spawn_blocking(move || {
         cmd.output()
             .map_err(|e| format!("Failed to execute apkeep: {}", e))
@@ -85,22 +84,18 @@ pub async fn get_app_versions(app_name: String) -> Result<Vec<String>, String> {
             })
     });
 
-    match tokio::time::timeout(Duration::from_secs(30), versions_future).await {
-        Ok(Ok(Ok(versions))) => {
+    match versions_future.await {
+        Ok(Ok(versions)) => {
             println!("[Versions] Successfully got {} versions", versions.len());
             Ok(versions)
         }
-        Ok(Ok(Err(e))) => {
+        Ok(Err(e)) => {
             println!("[Versions] Error: {}", e);
             Err(e)
         }
-        Ok(Err(e)) => {
+        Err(e) => {
             println!("[Versions] Task join error: {}", e);
             Err(format!("Task execution failed: {}", e))
-        }
-        Err(_) => {
-            println!("[Versions] Timeout after 30 seconds");
-            Err("Request timeout - check your internet connection".to_string())
         }
     }
 }
@@ -112,7 +107,6 @@ pub async fn download_app(
     out_path: String,
 ) -> Result<bool, String> {
     use std::process::Command;
-    use std::time::Duration;
 
     println!(
         "[Download] Starting download for app: {}, version: {:?}, path: {}",
@@ -152,10 +146,7 @@ pub async fn download_app(
 
     println!("[Download] Executing command: {:?}", cmd);
 
-    // Single attempt download with timeout
-    const TIMEOUT_SECONDS: u64 = 300; // 5 minutes timeout
-
-    // Execute with timeout using tokio
+    // Execute apkeep command without timeout - let it run until completion or error
     let download_future = tokio::task::spawn_blocking(move || {
         cmd.output()
             .map_err(|e| format!("Failed to execute apkeep: {}", e))
@@ -175,29 +166,19 @@ pub async fn download_app(
             })
     });
 
-    // Apply timeout to prevent hanging
-    match tokio::time::timeout(Duration::from_secs(TIMEOUT_SECONDS), download_future).await {
-        Ok(Ok(Ok(_))) => {
+    // Wait for completion without timeout
+    match download_future.await {
+        Ok(Ok(_)) => {
             println!("[Download] Download completed successfully");
             Ok(true)
         }
-        Ok(Ok(Err(e))) => {
+        Ok(Err(e)) => {
             println!("[Download] Download error: {}", e);
             Err(e)
         }
-        Ok(Err(e)) => {
+        Err(e) => {
             println!("[Download] Task join error: {}", e);
             Err(format!("Task execution failed: {}", e))
-        }
-        Err(_) => {
-            println!(
-                "[Download] Download timeout after {} seconds",
-                TIMEOUT_SECONDS
-            );
-            Err(format!(
-                "Download timeout after {} minutes",
-                TIMEOUT_SECONDS / 60
-            ))
         }
     }
 }

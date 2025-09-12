@@ -59,52 +59,52 @@ export default function HeroesLeftPanel() {
 	});
 
 	return (
-		<div className='bg-background flex h-full w-full flex-col border-r'>
-			{/* Header */}
-			<div className='border-border/40 flex items-center justify-between border-b px-4 py-3'>
-				<h3 className='font-semibold'>Heroes</h3>
+		<div className='flex h-full w-full flex-col'>
+			{/* Header - VSCode style */}
+			<div className='group text-muted-foreground hover:bg-accent/50 flex items-center justify-between px-3 py-2 text-xs font-medium uppercase'>
+				<span>Heroes</span>
 				<button
 					onClick={refreshHeroes}
-					className='hover:bg-muted/50 rounded p-1'
+					className='hover:bg-accent rounded p-1 opacity-0 transition-opacity group-hover:opacity-100'
 					title='Refresh Heroes'
 					disabled={loading}
 				>
-					<RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+					<RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
 				</button>
 			</div>
 
 			{/* Search */}
-			<div className='border-border/40 border-b p-3'>
+			<div className='px-2 py-1'>
 				<div className='relative'>
-					<Search className='absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-gray-400' />
+					<Search className='text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2' />
 					<input
 						type='text'
-						placeholder='Search heroes... (| for OR, + for AND: mara|knight or sword+10450)'
+						placeholder='Search heroes...'
 						value={searchTerm}
 						onChange={e => setSearchTerm(e.target.value)}
-						className='w-full rounded border px-8 py-2 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none'
+						className='bg-input focus:bg-background focus:ring-ring w-full rounded px-7 py-1 pr-7 text-xs focus:ring-1 focus:outline-none'
 					/>
 					<button
 						onClick={() => setShowSearchHelp(!showSearchHelp)}
-						className='absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-100'
+						className='hover:bg-accent absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5'
 						title='Search help'
 					>
-						<HelpCircle className='h-3 w-3 text-gray-400' />
+						<HelpCircle className='text-muted-foreground h-3 w-3' />
 					</button>
 				</div>
 				{showSearchHelp && (
-					<div className='mt-2 rounded border bg-blue-50 p-2 text-xs text-blue-800'>
+					<div className='bg-popover text-popover-foreground mt-1 rounded border p-2 text-xs shadow-md'>
 						<div className='mb-1 font-medium'>Search Tips:</div>
 						<div>
-							• Single term: <code className='rounded bg-white px-1'>mara</code>
+							• Single term: <code className='bg-muted rounded px-1'>mara</code>
 						</div>
 						<div>
-							• OR search: <code className='rounded bg-white px-1'>mara|knight</code> (matches either)
+							• OR search: <code className='bg-muted rounded px-1'>mara|knight</code> (matches either)
 						</div>
 						<div>
-							• AND search: <code className='rounded bg-white px-1'>sword+10450</code> (matches both)
+							• AND search: <code className='bg-muted rounded px-1'>sword+10450</code> (matches both)
 						</div>
-						<div className='mt-1 text-blue-600'>Searches name, ID, and folder name</div>
+						<div className='text-muted-foreground mt-1'>Searches name, ID, and folder name</div>
 					</div>
 				)}
 				{(searchTerm.includes('|') || searchTerm.includes('+')) && (
@@ -181,78 +181,87 @@ export default function HeroesLeftPanel() {
 				)}
 
 				{!loading && !error && filteredHeroes.length > 0 && (
-					<div className='p-2'>
-						<div className='space-y-1'>
+					<div className='flex-1 overflow-auto'>
+						<div>
 							{filteredHeroes.map(hero => (
-								<div key={hero.id} className='rounded border border-transparent'>
+								<div key={hero.id}>
 									{/* Main Hero Item */}
 									<div
-										className={`cursor-pointer rounded px-3 py-3 text-sm transition-colors ${
+										className={`flex cursor-pointer items-center px-3 py-2 text-sm transition-colors ${
 											selectedHero?.id === hero.id
-												? 'bg-accent border-primary border'
-												: 'hover:bg-muted/50 text-muted-foreground border border-transparent'
+												? 'bg-accent text-accent-foreground'
+												: 'hover:bg-accent/50 text-foreground'
 										} `}
+										onClick={() => selectHero(hero)}
 									>
-										<div className='flex items-center gap-2' onClick={() => selectHero(hero)}>
+										{/* Expand/Collapse chevron for skins */}
+										<button
+											onClick={e => {
+												e.stopPropagation();
+												setExpandedHeroId(expandedHeroId === hero.id ? null : hero.id);
+											}}
+											className='hover:bg-accent/50 mr-2 flex-shrink-0 rounded p-1'
+										>
+											{hero.skins && hero.skins.length > 0 ? (
+												expandedHeroId === hero.id ? (
+													<ChevronDown className='h-4 w-4' />
+												) : (
+													<ChevronRight className='h-4 w-4' />
+												)
+											) : (
+												<div className='h-4 w-4' />
+											)}
+										</button>
+
+										{/* Hero icon */}
+										<div className='mr-3 flex-shrink-0'>
 											{hero.avatar ? (
-												<div className='w-12 flex-shrink-0 rounded border p-2'>
+												<div className='size-10 overflow-hidden rounded border'>
 													<img
 														src={hero.avatar}
 														alt={`${hero.name} avatar`}
-														className='w-full object-cover object-center'
+														className='h-full w-full object-cover'
 													/>
 												</div>
 											) : (
-												<div className='bg-muted flex aspect-[9/16] w-10 items-center justify-center rounded border'>
-													<User className='text-muted-foreground w-full object-cover' />
+												<div className='bg-muted flex size-10 items-center justify-center rounded border'>
+													<User className='text-muted-foreground size-6' />
 												</div>
 											)}
-											<div className='min-w-0 flex-1'>
-												<div className='truncate font-medium'>
-													{hero.name.charAt(0).toUpperCase() + hero.name.slice(1)}
-												</div>
-												<div className='text-muted-foreground flex items-center gap-1 text-xs'>
-													<span>{hero.id}</span>
-													{hero.selectedSkin && (
-														<span className='rounded bg-purple-100 px-1 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300'>
-															Skin {hero.selectedSkin}
-														</span>
-													)}
-													{hero.skins && hero.skins.length > 0 && (
-														<span className='rounded bg-blue-100 px-1 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300'>
-															{hero.skins.length} skin{hero.skins.length !== 1 ? 's' : ''}
-														</span>
-													)}
-												</div>
+										</div>
+
+										{/* Hero name and details */}
+										<div className='min-w-0 flex-1'>
+											<div className='truncate font-medium'>
+												{hero.name.charAt(0).toUpperCase() + hero.name.slice(1)}
 											</div>
-											{/* Expand/Collapse Button */}
-											{hero.skins && hero.skins.length > 0 && (
-												<button
-													onClick={e => {
-														e.stopPropagation();
-														setExpandedHeroId(expandedHeroId === hero.id ? null : hero.id);
-													}}
-													className='hover:bg-muted rounded p-1 transition-colors'
-													title={
-														expandedHeroId === hero.id ? 'Collapse skins' : 'Expand skins'
-													}
-												>
-													{expandedHeroId === hero.id ? (
-														<ChevronDown className='h-4 w-4' />
-													) : (
-														<ChevronRight className='h-4 w-4' />
-													)}
-												</button>
+											<div className='text-muted-foreground truncate text-xs'>
+												ID: {hero.id}
+												{hero.skins && hero.skins.length > 0 && (
+													<span className='ml-2'>
+														• {hero.skins.length} skin{hero.skins.length !== 1 ? 's' : ''}
+													</span>
+												)}
+											</div>
+										</div>
+
+										{/* Status indicators */}
+										<div className='flex flex-shrink-0 items-center gap-2'>
+											{hero.selectedSkin && (
+												<div
+													className='bg-primary h-2 w-2 rounded-full'
+													title={`Skin ${hero.selectedSkin}`}
+												/>
 											)}
 										</div>
 									</div>
 
 									{/* Expandable Skin List */}
 									{hero.skins && hero.skins.length > 0 && expandedHeroId === hero.id && (
-										<div className='border-border mt-1 ml-4 space-y-1 border-l-2 pl-3'>
+										<div className='border-border/50 ml-8 border-l'>
 											{/* Skin Options (including default skin) */}
 											{hero.skins.map(skin => (
-												<button
+												<div
 													key={skin.id}
 													onClick={() => {
 														if (skin.isDefault) {
@@ -262,60 +271,57 @@ export default function HeroesLeftPanel() {
 														}
 														selectHero(hero);
 													}}
-													className={`w-full rounded px-2 py-1.5 text-left text-xs transition-colors ${
+													className={`flex cursor-pointer items-center px-3 py-1.5 text-sm transition-colors ${
 														(skin.isDefault && !hero.selectedSkin) ||
 														hero.selectedSkin === skin.id
-															? 'border border-purple-500 bg-purple-500/10 text-purple-500 dark:border-purple-400 dark:text-purple-400'
-															: 'text-muted-foreground hover:bg-muted'
+															? 'bg-accent text-accent-foreground'
+															: 'hover:bg-accent/50 text-muted-foreground'
 													}`}
 												>
-													<div className='flex items-center gap-2'>
-														<Palette className='h-3 w-3' />
-														<span>
+													<div className='mr-2 h-4 w-4' />
+													<Palette className='mr-3 h-4 w-4 flex-shrink-0' />
+													<div className='min-w-0 flex-1'>
+														<div className='truncate'>
 															{skin.isDefault
 																? 'Default'
 																: skin.name || `Skin ${skin.id}`}
-														</span>
-														<div className='ml-auto flex items-center gap-1'>
-															{((skin.isDefault && !hero.selectedSkin) ||
-																hero.selectedSkin === skin.id) && (
-																<span className='rounded bg-purple-500/20 px-1 text-xs text-purple-500 dark:text-purple-400'>
-																	Active
-																</span>
-															)}
-															{skin.colors && skin.colors.length > 0 && (
-																<span className='rounded bg-orange-500/20 px-1 text-xs text-orange-500'>
-																	{skin.colors.length} colors
-																</span>
-															)}
 														</div>
+														{skin.colors && skin.colors.length > 0 && (
+															<div className='text-muted-foreground text-xs'>
+																{skin.colors.length} color
+																{skin.colors.length !== 1 ? 's' : ''}
+															</div>
+														)}
 													</div>
-												</button>
+													<div className='ml-auto flex flex-shrink-0 items-center gap-2'>
+														{((skin.isDefault && !hero.selectedSkin) ||
+															hero.selectedSkin === skin.id) && (
+															<div className='bg-primary h-2 w-2 rounded-full' />
+														)}
+													</div>
+												</div>
 											))}
 
 											{/* Show standalone Default button only if no default skin (skin 99) exists */}
 											{!hero.skins.some(skin => skin.isDefault) && (
-												<button
+												<div
 													onClick={() => {
 														resetToDefaultSkin(hero.id);
 														selectHero(hero);
 													}}
-													className={`w-full rounded px-2 py-1.5 text-left text-xs transition-colors ${
+													className={`flex cursor-pointer items-center px-3 py-1.5 text-sm transition-colors ${
 														!hero.selectedSkin
-															? 'border-primary bg-primary/10 text-primary border'
-															: 'text-muted-foreground hover:bg-muted'
+															? 'bg-accent text-accent-foreground'
+															: 'hover:bg-accent/50 text-muted-foreground'
 													}`}
 												>
-													<div className='flex items-center gap-2'>
-														<Palette className='h-3 w-3' />
-														<span>Default</span>
-														{!hero.selectedSkin && (
-															<span className='bg-primary/20 text-primary ml-auto rounded px-1 text-xs'>
-																Active
-															</span>
-														)}
-													</div>
-												</button>
+													<div className='mr-2 h-4 w-4' />
+													<Palette className='mr-3 h-4 w-4 flex-shrink-0' />
+													<span className='truncate'>Default</span>
+													{!hero.selectedSkin && (
+														<div className='bg-primary ml-auto h-2 w-2 rounded-full' />
+													)}
+												</div>
 											)}
 										</div>
 									)}
