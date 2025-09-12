@@ -9,7 +9,7 @@ import { Palette, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function HeroesRightPanel() {
-	const { selectedHero, heroes, loading, loadHeroAvatar, isCacheValid } = useHeroes();
+	const { selectedHero, heroes, loading, heroesLoading, loadHeroAvatar, isCacheValid } = useHeroes();
 	const { path: projectPath } = useProjectStore();
 	const [skinImages, setSkinImages] = useState<{ [key: string]: string }>({});
 
@@ -97,21 +97,34 @@ export default function HeroesRightPanel() {
 		}
 	}, [selectedHero, loadHeroAvatar, isCacheValid]);
 
-	// No hero selected
-	if (!selectedHero) {
+	// No hero selected or heroes are loading
+	if (!selectedHero || heroesLoading) {
 		return (
 			<div className='flex h-full w-full flex-col p-6'>
 				<div className='mb-6'>
-					<h2 className='text-2xl font-bold'>Heroes Editor</h2>
-					<p className='text-muted-foreground'>Manage and edit game heroes</p>
+					<h2 className='text-2xl font-bold'>Hero</h2>
 				</div>
 
 				<div className='flex flex-1 items-center justify-center'>
 					<div className='text-center'>
-						<User className='text-muted-foreground/50 mx-auto h-16 w-16' />
-						<h3 className='mt-4 text-lg font-medium'>No Hero Selected</h3>
-						<p className='text-muted-foreground mt-2'>Select a hero from the left panel to view details</p>
-						{!loading && heroes.length === 0 && (
+						{heroesLoading ? (
+							<>
+								<div className='mx-auto h-16 w-16 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500' />
+								<h3 className='mt-4 text-lg font-medium'>Loading Heroes...</h3>
+								<p className='text-muted-foreground mt-2'>
+									Please wait while we refresh the heroes list
+								</p>
+							</>
+						) : (
+							<>
+								<User className='text-muted-foreground/50 mx-auto h-16 w-16' />
+								<h3 className='mt-4 text-lg font-medium'>No Hero Selected</h3>
+								<p className='text-muted-foreground mt-2'>
+									Select a hero from the left panel to view details
+								</p>
+							</>
+						)}
+						{!loading && !heroesLoading && heroes.length === 0 && (
 							<div className='bg-muted mt-4 rounded-lg p-4 text-sm'>
 								<p className='text-muted-foreground'>
 									No heroes found in{' '}
@@ -130,13 +143,13 @@ export default function HeroesRightPanel() {
 	}
 
 	return (
-		<div className='flex h-full w-full flex-col overflow-y-auto p-6'>
-			<div className='mb-6'>
-				<h2 className='text-2xl font-bold'>{selectedHero.name}</h2>
+		<div className='relative flex h-full w-full flex-col overflow-y-auto'>
+			<div className='bg-background sticky top-0 right-0 left-0 z-20 mb-6 border-b px-4 py-2'>
+				<h2 className='text-2xl font-bold capitalize'>{selectedHero.name}</h2>
 				<span className='text-muted-foreground text-xs'>ID: {selectedHero.id}</span>
 			</div>
 
-			<div className='flex flex-col gap-6'>
+			<div className='flex flex-col gap-6 p-6'>
 				{/* Hero Images */}
 				<div className='w-fit rounded-lg border p-4'>
 					<div className='mb-4 flex items-center gap-2'>

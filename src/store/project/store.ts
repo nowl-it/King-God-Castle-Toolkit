@@ -37,11 +37,13 @@ export type ProjectState = {
 	path: string;
 	selectedHero: Hero | null;
 	heroesCache: HeroesCache;
+	heroesLoading: boolean;
 };
 
 export type ProjectActions = {
 	setPath: (path: string) => void;
 	setSelectedHero: (hero: Hero | null) => void;
+	setHeroesLoading: (loading: boolean) => void;
 	cacheHero: (heroId: string, hero: Hero, avatarProcessed?: boolean) => void;
 	getCachedHero: (heroId: string) => Hero | null;
 	isCacheValid: (heroId: string, maxAge?: number) => boolean;
@@ -51,13 +53,14 @@ export type ProjectActions = {
 export type ProjectStore = ProjectState & ProjectActions;
 
 export const initProjectStore = (): ProjectState => {
-	return { path: '', selectedHero: null, heroesCache: {} };
+	return { path: '', selectedHero: null, heroesCache: {}, heroesLoading: false };
 };
 
 export const defaultInitState: ProjectState = {
 	path: '',
 	selectedHero: null,
 	heroesCache: {},
+	heroesLoading: false,
 };
 
 export const useProjectStore = create<ProjectStore>()(
@@ -73,6 +76,7 @@ export const useProjectStore = create<ProjectStore>()(
 				}, 0);
 			},
 			setSelectedHero: (hero: Hero | null) => set({ selectedHero: hero }),
+			setHeroesLoading: (loading: boolean) => set({ heroesLoading: loading }),
 			cacheHero: (heroId: string, hero: Hero, avatarProcessed = false) => {
 				set(state => ({
 					heroesCache: {

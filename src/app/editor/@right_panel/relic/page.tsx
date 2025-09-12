@@ -2,13 +2,13 @@ import { Suspense } from 'react';
 
 export const experimental_ppr = true;
 
-export default function LegacyRightPanel() {
+export default function RelicRightPanel() {
 	return (
-		<Suspense fallback={<div>Loading legacy tools...</div>}>
+		<Suspense fallback={<div>Loading relic tools...</div>}>
 			<div className='flex h-full w-full flex-col p-6'>
 				<div className='mb-6'>
-					<h2 className='text-2xl font-bold'>Legacy Tools</h2>
-					<p className='text-muted-foreground'>Tools for working with legacy game data</p>
+					<h2 className='text-2xl font-bold'>Relic Tools</h2>
+					<p className='text-muted-foreground'>Tools for working with relic game data</p>
 				</div>
 
 				<div className='grid flex-1 gap-4'>
@@ -17,9 +17,9 @@ export default function LegacyRightPanel() {
 						<p className='text-muted-foreground mb-4 text-sm'>Convert old game files to new format</p>
 						<div className='space-y-2'>
 							<button className='bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded px-4 py-2'>
-								Select Legacy Files
+								Select Relic Files
 							</button>
-							<div className='text-muted-foreground text-xs'>Supported: .dat, .old, .legacy</div>
+							<div className='text-muted-foreground text-xs'>Supported: .dat, .old, .relic</div>
 						</div>
 					</div>
 
