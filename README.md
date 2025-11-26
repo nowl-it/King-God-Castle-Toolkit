@@ -1,36 +1,24 @@
 # King-God-Castle-Toolkit
 
-![Version](https://img.shields.io/badge/version-0.0.3-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
 
 ## Overview
 
-King-God-Castle-Toolkit is a powerful and versatile toolkit designed to enhance your experience with the King God Castle game. This project provides various tools and utilities to help players optimize their gameplay, manage resources, and explore game data efficiently.
+King-God-Castle-Toolkit is a powerful utility designed to enhance your experience with the King God Castle game. This project provides tools to help players download the game and convert assets for Unity.
 
 ## Features
 
-### 🦸 Hero Editor
-
-- **Advanced Hero Management**: Browse and manage game heroes with comprehensive metadata
-- **Multi-Color Skin System**: Support for multiple skin variants and color schemes
-- **Real-time Avatar Preview**: Live preview of selected skins and animations
-- **Intelligent Caching**: 30-minute TTL cache system for improved performance
-- **Professional Logging**: Structured logging with context-aware debugging
-
 ### 🛠️ Game Tools
 
-- **C2U Converter**: Convert and process game assets between formats
-- **Unity Asset Parser**: Extract and analyze Unity prefabs and assets
-- **File Watcher**: Real-time monitoring of asset changes
-- **Asset Ripper Integration**: Built-in asset extraction capabilities
+- **Game Installer**: Download specific versions of King God Castle directly.
+- **C2U Converter**: Convert game assets to Unity projects for analysis and modification.
 
 ### 🎯 Technical Features
 
 - **Auto-Updates**: Cryptographically signed update system via GitHub Releases
 - **Cross-Platform Support**: Native desktop apps for Linux and Windows
-- **VSCode-like Interface**: Resizable panels and professional editor layout
-- **Internationalization**: Multi-language support with i18next
 - **Modern Architecture**: Next.js 15 + Tauri v2 with TypeScript and Rust
 
 ## Project Structure
@@ -38,7 +26,7 @@ King-God-Castle-Toolkit is a powerful and versatile toolkit designed to enhance 
 ```text
 King-God-Castle-Toolkit/
 ├── src/                # Source code for the application
-│   ├── app/           # Next.js app directory with parallel routes
+│   ├── app/           # Next.js app directory
 │   ├── components/    # Reusable UI components and providers
 │   ├── hooks/         # Custom React hooks
 │   ├── lib/           # Utility libraries and helpers
@@ -59,7 +47,7 @@ King-God-Castle-Toolkit/
 
 ## Technology Stack
 
-- **Frontend**: Next.js 15.4.2 with Turbopack, React 19, TypeScript, Tailwind CSS 4.1.11
+- **Frontend**: Next.js 15.5.2 with Turbopack, React 19, TypeScript, Tailwind CSS 4.1.11
 - **UI Components**: shadcn/ui, Radix UI primitives, Lucide icons
 - **State Management**: Zustand with persistence, TanStack React Query
 - **Desktop App**: Tauri v2.7.0 with Rust backend
@@ -140,26 +128,6 @@ pnpm tauri build --target x86_64-pc-windows-msvc
 # Generate Tauri icons
 pnpm tauri icon path/to/icon.png
 ```
-
-## Hero Editor
-
-The hero editor provides comprehensive tools for managing game heroes:
-
-### Key Features
-
-- **Hero Management**: Browse heroes from `Assets/01_Fx/1_Hero/` directory
-- **Avatar System**: Automatic avatar loading from combined textures or unit images
-- **Skin Support**: Multi-color skin system with automatic discovery
-- **Real-time Preview**: Live preview of selected skins and colors
-- **Cache System**: Intelligent caching for improved performance
-- **Professional Logging**: Structured logging system for debugging
-
-### Supported File Formats
-
-- **Hero Folders**: `Fx_001 (Knight)`, `Fx_002 (Archer)`, etc.
-- **Avatar Assets**: `Avatar_*.asset` files in `Assets/02_UI/UI_Avatar/`
-- **Skin Images**: `Unit_<heroId>_<skinId>_<colorId>.png` in `Assets/00_Unit/#Image/`
-- **Default Skins**: `Unit_<heroId>.png` for base hero appearance
 
 ## Auto-Updates
 

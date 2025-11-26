@@ -1,6 +1,6 @@
 # Maintainer: nowl <https://github.com/nowl-it>
 pkgname=kgc-toolkit-git
-pkgver=0.0.3
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="King God Castle Toolkit"
 arch=('x86_64')

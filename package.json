@@ -1,7 +1,7 @@
 {
 	"name": "kgc-toolkit",
 	"private": true,
-	"version": "0.0.3",
+	"version": "1.0.0",
 	"type": "module",
 	"author": {
 		"name": "nowl-it",
