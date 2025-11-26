@@ -1,4 +1,4 @@
-# King-God-Castle-Toolkit
+# King God Castle Toolkit
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
