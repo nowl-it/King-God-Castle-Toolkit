@@ -6,7 +6,7 @@
 
 ## Overview
 
-King-God-Castle-Toolkit is a powerful utility designed to enhance your experience with the King God Castle game. This project provides tools to help players download the game and convert assets for Unity.
+King God Castle Toolkit is a powerful utility designed to enhance your experience with the King God Castle game. This project provides tools to help players download the game and convert assets for Unity.
 
 ## Features
 
