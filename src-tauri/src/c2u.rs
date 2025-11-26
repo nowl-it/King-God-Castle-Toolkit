@@ -1,9 +1,10 @@
 use std::{
     fs::{self, File},
-    io,
+    io::{self, BufReader},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
 };
+
 
 use zip::ZipArchive;
 
@@ -88,7 +89,7 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
         if file_name.ends_with(".apk") {
             all_apks.push(file_path.clone());
 
-            if file_name == "base_assets.apk" || file_name == "base.apk" {
+            if file_name == "base_assets.apk" {
                 base_assets_path = Some(file_path);
             } else if file_name.starts_with("config.") && file_name.ends_with(".apk") {
                 config_apks.push(file_path);
@@ -101,27 +102,15 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
         println!("  - {}", apk.file_name().unwrap().to_string_lossy());
     }
 
-    // Nếu không tìm thấy base_assets.apk hoặc base.apk, thử tìm APK lớn nhất
+    // Chỉ chấp nhận base_assets.apk - dừng nếu không tìm thấy
     let base_assets = if let Some(path) = base_assets_path {
         println!(
-            "Sử dụng file base: {}",
+            "Tìm thấy file base_assets.apk: {}",
             path.file_name().unwrap().to_string_lossy()
         );
         path
-    } else if !all_apks.is_empty() {
-        // Tìm APK lớn nhất (có thể là main APK)
-        let largest_apk = all_apks
-            .iter()
-            .max_by_key(|apk| apk.metadata().map(|m| m.len()).unwrap_or(0))
-            .ok_or("Không thể xác định APK chính")?;
-
-        println!(
-            "Không tìm thấy base_assets.apk hoặc base.apk, sử dụng APK lớn nhất: {}",
-            largest_apk.file_name().unwrap().to_string_lossy()
-        );
-        largest_apk.clone()
     } else {
-        return Err("Không tìm thấy file APK nào trong XAPK".to_string());
+        return Err("Không tìm thấy file base_assets.apk. Chương trình dừng lại.".to_string());
     };
 
     // Xóa tất cả files khác
@@ -133,7 +122,6 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
         let file_name = file_path.file_name().unwrap().to_string_lossy();
 
         let should_keep = file_name == "base_assets.apk"
-            || file_name == "base.apk"
             || (file_name.starts_with("config.") && file_name.ends_with(".apk"));
 
         if !should_keep {
@@ -208,64 +196,83 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
 
     // Bước 6: Chạy AssetRipper với base_assets làm input
     println!("Đang chạy AssetRipper...");
-    let final_output_dir = output_path;
+    let final_output_dir = output_path.join("_EXPORTED_");
     fs::create_dir_all(&final_output_dir)
         .map_err(|e| format!("Không thể tạo thư mục output cuối: {}", e))?;
 
-    // Chạy AssetRipper với timeout và memory limit awareness
+    // Chạy AssetRipper với improved command execution
     let asset_ripper_path = get_asset_ripper().ok_or("AssetRipper không tìm thấy")?;
+
+    // Verify AssetRipper executable exists
+    if !std::path::Path::new(&asset_ripper_path).exists() {
+        return Err(format!(
+            "AssetRipper executable not found at: {}",
+            asset_ripper_path
+        ));
+    }
 
     println!("Executing AssetRipper: {}", asset_ripper_path);
     println!("Input path: {:?}", base_assets_dir);
     println!("Output path: {:?}", final_output_dir);
 
-    let mut cmd = Command::new(&asset_ripper_path);
-    cmd.arg("--InputPath")
-        .arg(&base_assets_dir)
-        .arg("--OutputPath")
-        .arg(&final_output_dir);
+    let args = vec![
+        "--InputPath".to_string(),
+        base_assets_dir.to_string_lossy().to_string(),
+        "--OutputPath".to_string(),
+        final_output_dir.to_string_lossy().to_string(),
+    ];
 
-    println!("Command: {:?}", cmd); // Sử dụng spawn để có thể handle timeout
-    let mut child = cmd
+    let mut command;
+
+    if cfg!(target_os = "windows") {
+        command = Command::new(&asset_ripper_path);
+    } else {
+        command = Command::new(&asset_ripper_path);
+    }
+
+    command.args(&args);
+
+    println!("Command: {:?}", command);
+
+    let status = command
+        .stdout(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Error starting AssetRipper: {}", e))?;
+        .map_err(|e| format!("Failed to start AssetRipper: {}", e))?
+        .wait()
+        .map_err(|e| format!("Failed to wait for AssetRipper: {}", e))?;
 
-    // Đợi process với timeout 10 phút
-    use std::time::{Duration, Instant};
-    let timeout = Duration::from_secs(600); // 10 minutes
-    let start_time = Instant::now();
+    if !status.success() {
+        return Err(format!("AssetRipper failed with status: {}", status));
+    }
 
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                println!("AssetRipper completed with status: {:?}", status);
-                if !status.success() {
-                    let error_detail = match status.code() {
-                        Some(code) => format!("exit code: {}", code),
-                        None => "terminated by signal".to_string(),
-                    };
-                    return Err(format!("AssetRipper failed with {}", error_detail));
-                }
-                break;
-            }
-            Ok(None) => {
-                // Process still running, check timeout
-                if start_time.elapsed() > timeout {
-                    println!("AssetRipper timeout, killing process...");
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err(
-                        "AssetRipper timeout after 10 minutes - file quá lớn hoặc thiếu RAM"
-                            .to_string(),
-                    );
-                }
-                // Sleep a bit before checking again
-                std::thread::sleep(Duration::from_secs(1));
-            }
-            Err(e) => {
-                return Err(format!("Error waiting for AssetRipper: {}", e));
+    // Clean up temporary directory
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir)
+            .map_err(|e| format!("Warning: Could not clean up temp directory: {}", e))?;
+    }
+
+    // Move all contents from final_output_dir to output_path
+    if final_output_dir.exists() {
+        let entries = fs::read_dir(&final_output_dir)
+            .map_err(|e| format!("Không thể đọc thư mục output cuối: {}", e))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Lỗi đọc entry trong output: {}", e))?;
+            let source_path = entry.path();
+            let file_name = source_path.file_name().unwrap();
+            let target_path = output_path.join(file_name);
+
+            if source_path.is_dir() {
+                copy_dir_recursive(&source_path, &target_path)?;
+            } else {
+                fs::copy(&source_path, &target_path)
+                    .map_err(|e| format!("Không thể copy file từ output cuối: {}", e))?;
             }
         }
+
+        // Remove the final_output_dir after moving contents
+        fs::remove_dir_all(&final_output_dir)
+            .map_err(|e| format!("Warning: Could not clean up final output directory: {}", e))?;
     }
 
     println!("Hoàn thành! Kết quả được lưu tại: {:?}", final_output_dir);
@@ -275,7 +282,15 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
 // Hàm hỗ trợ giải nén ZIP/APK sử dụng ZipArchive (đa nền tảng)
 fn extract_zip(zip_path: &Path, extract_to: &Path) -> Result<(), String> {
     let file = File::open(zip_path).map_err(|e| format!("Không thể mở file zip: {}", e))?;
-    let mut archive = ZipArchive::new(file).map_err(|e| format!("Không thể đọc archive: {}", e))?;
+    let reader = BufReader::new(file);
+    let mut archive =
+        ZipArchive::new(reader).map_err(|e| format!("Không thể đọc archive: {}", e))?;
+
+    println!(
+        "Extracting {} files from {:?}",
+        archive.len(),
+        zip_path.file_name().unwrap_or_default()
+    );
 
     for i in 0..archive.len() {
         let mut file = archive
@@ -322,6 +337,10 @@ fn extract_zip(zip_path: &Path, extract_to: &Path) -> Result<(), String> {
 
 // Hàm hỗ trợ copy thư mục đệ quy (thay thế cho fs::rename để đa nền tảng)
 fn copy_dir_recursive(source: &Path, target: &Path) -> Result<(), String> {
+    if !source.exists() {
+        return Err(format!("Source directory không tồn tại: {:?}", source));
+    }
+
     if !target.exists() {
         fs::create_dir_all(target).map_err(|e| format!("Không thể tạo thư mục target: {}", e))?;
     }
@@ -348,6 +367,10 @@ fn copy_dir_recursive(source: &Path, target: &Path) -> Result<(), String> {
 
 // Hàm hỗ trợ merge hai thư mục
 fn merge_directories(source: &Path, target: &Path) -> Result<(), String> {
+    if !source.exists() {
+        return Err(format!("Source directory không tồn tại: {:?}", source));
+    }
+
     let entries =
         fs::read_dir(source).map_err(|e| format!("Không thể đọc thư mục source: {}", e))?;
 
@@ -373,3 +396,5 @@ fn merge_directories(source: &Path, target: &Path) -> Result<(), String> {
 
     Ok(())
 }
+
+

@@ -1,54 +1,78 @@
 # King-God-Castle-Toolkit
 
+![Version](https://img.shields.io/badge/version-0.0.3-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
+
 ## Overview
 
 King-God-Castle-Toolkit is a powerful and versatile toolkit designed to enhance your experience with the King God Castle game. This project provides various tools and utilities to help players optimize their gameplay, manage resources, and explore game data efficiently.
 
 ## Features
 
-- **Hero Editor**: Advanced hero management system with skin and avatar support
-  - Browse and manage game heroes
-  - Multi-color skin system support
-  - Real-time avatar preview and switching
-  - Professional logging system
-- **Game Data Analysis**: Tools to analyze and extract game data
-- **Resource Management**: Utilities to manage in-game resources effectively
-- **Auto-Updates**: Built-in updater system for seamless app updates
-- **Cross-Platform Support**: Compatible with Linux, Windows, and macOS
-- **Customizable Components**: Modular design for easy customization and extension
+### 🦸 Hero Editor
+
+- **Advanced Hero Management**: Browse and manage game heroes with comprehensive metadata
+- **Multi-Color Skin System**: Support for multiple skin variants and color schemes
+- **Real-time Avatar Preview**: Live preview of selected skins and animations
+- **Intelligent Caching**: 30-minute TTL cache system for improved performance
+- **Professional Logging**: Structured logging with context-aware debugging
+
+### 🛠️ Game Tools
+
+- **C2U Converter**: Convert and process game assets between formats
+- **Unity Asset Parser**: Extract and analyze Unity prefabs and assets
+- **File Watcher**: Real-time monitoring of asset changes
+- **Asset Ripper Integration**: Built-in asset extraction capabilities
+
+### 🎯 Technical Features
+
+- **Auto-Updates**: Cryptographically signed update system via GitHub Releases
+- **Cross-Platform Support**: Native desktop apps for Linux and Windows
+- **VSCode-like Interface**: Resizable panels and professional editor layout
+- **Internationalization**: Multi-language support with i18next
+- **Modern Architecture**: Next.js 15 + Tauri v2 with TypeScript and Rust
 
 ## Project Structure
 
 ```text
 King-God-Castle-Toolkit/
 ├── src/                # Source code for the application
-│   ├── app/           # Next.js app directory
-│   ├── components/    # Reusable UI components
+│   ├── app/           # Next.js app directory with parallel routes
+│   ├── components/    # Reusable UI components and providers
 │   ├── hooks/         # Custom React hooks
-│   ├── store/         # Zustand state management
-│   └── utils/         # Utility functions and logging
-├── src-tauri/          # Tauri integration for building desktop apps
-├── public/             # Static assets
-├── scripts/            # Build and deployment scripts
-├── package.json        # Project dependencies and scripts
-├── .gitattributes      # Git LFS and file tracking configuration
-└── .github/            # GitHub workflows and Dependabot configuration
+│   ├── lib/           # Utility libraries and helpers
+│   ├── store/         # Zustand state management with persistence
+│   ├── styles/        # Global CSS and Tailwind configurations
+│   ├── types/         # TypeScript type definitions
+│   └── utils/         # Utility functions, constants, and logging
+├── src-tauri/          # Tauri Rust backend
+│   ├── src/           # Rust source code
+│   ├── binaries/      # External binaries (AssetRipper, etc.)
+│   ├── capabilities/  # Tauri security capabilities
+│   └── icons/         # Application icons for all platforms
+├── public/             # Static assets and JSON data
+├── .github/            # GitHub workflows, Dependabot, and documentation
+├── .vscode/            # VS Code workspace configuration
+└── package.json        # Project dependencies and scripts
 ```
 
 ## Technology Stack
 
-- **Frontend**: Next.js 15.5.2 with Turbopack, TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Lucide icons
-- **State Management**: Zustand with persistence
-- **Desktop App**: Tauri v2 with Rust backend
-- **Package Manager**: PNPM
-- **Deployment**: GitHub Actions with multi-platform builds
+- **Frontend**: Next.js 15.4.2 with Turbopack, React 19, TypeScript, Tailwind CSS 4.1.11
+- **UI Components**: shadcn/ui, Radix UI primitives, Lucide icons
+- **State Management**: Zustand with persistence, TanStack React Query
+- **Desktop App**: Tauri v2.7.0 with Rust backend
+- **Package Manager**: PNPM with workspace configuration
+- **Development**: Vitest for testing, Biome + ESLint for linting
+- **Deployment**: GitHub Actions with multi-platform builds and auto-updates
 
 ## Prerequisites
 
-- **Node.js**: Ensure you have Node.js installed (v16 or higher).
-- **pnpm**: Install pnpm for managing dependencies.
-- **Rust**: Required for building the Tauri application.
+- **Node.js**: Ensure you have Node.js installed (v18 or higher recommended)
+- **pnpm**: Install pnpm for managing dependencies and workspaces
+- **Rust**: Required for building the Tauri application and Rust backend
+- **Git LFS**: Required for handling large binary assets
 
 ## Installation
 
@@ -72,28 +96,49 @@ King-God-Castle-Toolkit/
 
 ## Usage
 
-### Development
-
-To start the development server:
+### Development Commands
 
 ```bash
+# Start Next.js development server with Turbopack
 pnpm dev
+
+# Start Tauri desktop app in development mode
+pnpm tauri dev
+
+# Run tests with Vitest
+pnpm test
+
+# Lint code with Biome and ESLint
+pnpm lint
+
+# Auto-fix linting issues
+pnpm fix
 ```
 
-### Build
-
-To build the project for production:
+### Production Build
 
 ```bash
+# Build Next.js app for production
 pnpm build
+
+# Build Tauri desktop application
+pnpm tauri build
+
+# Start production server
+pnpm start
 ```
 
-### Tauri Desktop App
-
-To build the Tauri desktop application:
+### Tauri Commands
 
 ```bash
+# Build desktop app for current platform
 pnpm tauri build
+
+# Build for specific platform
+pnpm tauri build --target x86_64-pc-windows-msvc
+
+# Generate Tauri icons
+pnpm tauri icon path/to/icon.png
 ```
 
 ## Hero Editor
@@ -118,25 +163,38 @@ The hero editor provides comprehensive tools for managing game heroes:
 
 ## Auto-Updates
 
-The application includes built-in auto-update functionality:
+The application includes built-in auto-update functionality using Tauri's updater plugin:
+
+### Update Features
+
+- **Automatic Update Checking**: Updates are checked on application startup
+- **Cryptographic Signing**: All updates are signed for security verification
+- **GitHub Releases Integration**: Updates are distributed via GitHub Releases
+- **Cross-Platform Support**: Works on both Linux and Windows platforms
 
 ### Setup for Developers
 
-1. Generate signing keys:
+1. Generate signing keys (if not already done):
 
     ```bash
+    # Generate new keypair for signing updates
     ./scripts/generate-updater-keys.sh
     ```
 
-2. Add GitHub secrets:
-   - `TAURI_SIGNING_PRIVATE_KEY`: Private key content
-   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: Key password (if set)
+2. Configure GitHub repository secrets:
+   - `TAURI_SIGNING_PRIVATE_KEY`: Private key content for signing releases
+   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: Key password (if set during generation)
 
-3. The updater will automatically check for updates on app start
+3. The updater automatically:
+   - Checks for updates when the app starts
+   - Downloads and verifies update signatures
+   - Prompts users to install available updates
 
 ### Update Distribution
 
-Updates are distributed through GitHub Releases with signed artifacts for security.
+- Updates are built and published through GitHub Actions workflows
+- Each release includes signed binaries for supported platforms
+- Update manifests are automatically generated and hosted on GitHub
 
 ## Contributing
 
@@ -153,9 +211,11 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 ## Acknowledgments
 
 - Thanks to the King God Castle community for their support and feedback
-- Built with [Tauri](https://tauri.app/) and [Next.js](https://nextjs.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Icons from [Lucide](https://lucide.dev/)
+- Built with [Tauri v2](https://tauri.app/) and [Next.js 15](https://nextjs.org/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/) and [Radix UI](https://www.radix-ui.com/)
+- Icons from [Lucide](https://lucide.dev/) and [Simple Icons](https://simpleicons.org/)
+- State management with [Zustand](https://zustand-demo.pmnd.rs/)
+- Testing with [Vitest](https://vitest.dev/) and code quality with [Biome](https://biomejs.dev/)
 
 ---
 

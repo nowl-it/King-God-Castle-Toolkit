@@ -1,7 +1,8 @@
 'use client';
 
 import { isServer, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { I18nProvider } from './providers/i18n-provider';
 import TitleAppProvider from './titleAppProvider';
 
 function makeQueryClient() {
@@ -25,7 +26,7 @@ function makeQueryClient() {
 	});
 }
 
-let browserQueryClient: QueryClient | undefined = undefined;
+let browserQueryClient: QueryClient | undefined;
 
 function getQueryClient() {
 	if (isServer) {
@@ -41,7 +42,9 @@ export default function Providers({ children }: { children: ReactNode }) {
 	const queryClient = getQueryClient();
 	return (
 		<QueryClientProvider client={queryClient}>
-			<TitleAppProvider>{children}</TitleAppProvider>
+			<I18nProvider>
+				<TitleAppProvider>{children}</TitleAppProvider>
+			</I18nProvider>
 		</QueryClientProvider>
 	);
 }

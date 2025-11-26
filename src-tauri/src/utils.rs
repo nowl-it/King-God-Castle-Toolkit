@@ -1,5 +1,8 @@
 use std::path::Path;
 
+use serde_json::Value;
+use unity_yaml_rust::Yaml;
+
 pub fn check_os() -> String {
     let os = std::env::consts::OS;
     match os {
@@ -17,7 +20,8 @@ pub fn get_asset_ripper() -> Option<String> {
     }
 
     let dir = format!(
-        "binaries/asset-ripper-{}-x64/AssetRipper.GUI.Free{}",
+        "{}/binaries/asset-ripper/{}-x64/AssetRipper.GUI.Free{}",
+        std::env::current_dir().unwrap().display(),
         os,
         if os == "windows" { ".exe" } else { "" }
     );
@@ -471,4 +475,317 @@ pub struct AssetCropInfo {
     pub y: u32,
     pub width: u32,
     pub height: u32,
+}
+
+#[tauri::command]
+pub async fn export_hero_avatar(
+    base64_data: String,
+    hero_name: String,
+    output_dir: String,
+) -> Result<String, String> {
+    use base64::{engine::general_purpose, Engine as _};
+    use std::fs;
+
+    println!("[Export] Exporting hero avatar: {}", hero_name);
+
+    // Parse base64 data (remove data:image/png;base64, prefix if present)
+    let base64_clean = if base64_data.starts_with("data:image/png;base64,") {
+        &base64_data[22..]
+    } else {
+        &base64_data
+    };
+
+    // Decode base64 to bytes
+    let image_bytes = general_purpose::STANDARD
+        .decode(base64_clean)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    // Create output directory if it doesn't exist
+    fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    // Generate filename (sanitize hero name for filesystem)
+    let sanitized_name = hero_name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>()
+        .replace(' ', "_");
+
+    let filename = format!("{}_avatar.png", sanitized_name);
+    let output_path = format!("{}/{}", output_dir, filename);
+
+    // Write image bytes to file
+    fs::write(&output_path, image_bytes)
+        .map_err(|e| format!("Failed to write image file: {}", e))?;
+
+    println!("[Export] Successfully exported avatar to: {}", output_path);
+    Ok(output_path)
+}
+
+#[tauri::command]
+pub async fn export_hero_skin_image(
+    base64_data: String,
+    hero_name: String,
+    skin_id: String,
+    color_id: Option<String>,
+    output_dir: String,
+) -> Result<String, String> {
+    use base64::{engine::general_purpose, Engine as _};
+    use std::fs;
+
+    let skin_info = if let Some(color) = color_id {
+        format!("skin_{}_{}", skin_id, color)
+    } else {
+        format!("skin_{}", skin_id)
+    };
+
+    println!(
+        "[Export] Exporting hero skin image: {} - {}",
+        hero_name, skin_info
+    );
+
+    // Parse base64 data (remove data:image/png;base64, prefix if present)
+    let base64_clean = if base64_data.starts_with("data:image/png;base64,") {
+        &base64_data[22..]
+    } else {
+        &base64_data
+    };
+
+    // Decode base64 to bytes
+    let image_bytes = general_purpose::STANDARD
+        .decode(base64_clean)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    // Create output directory if it doesn't exist
+    fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    // Generate filename (sanitize hero name for filesystem)
+    let sanitized_name = hero_name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>()
+        .replace(' ', "_");
+
+    let filename = format!("{}_{}.png", sanitized_name, skin_info);
+    let output_path = format!("{}/{}", output_dir, filename);
+
+    // Write image bytes to file
+    fs::write(&output_path, image_bytes)
+        .map_err(|e| format!("Failed to write image file: {}", e))?;
+
+    println!(
+        "[Export] Successfully exported skin image to: {}",
+        output_path
+    );
+    Ok(output_path)
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct BulkExportHero {
+    pub id: String,
+    pub name: String,
+    pub avatar: Option<String>,
+    pub skins: Option<Vec<BulkExportSkin>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct BulkExportSkin {
+    pub skin_id: String,
+    pub color_id: Option<String>,
+    pub image_data: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct ExportProgress {
+    pub current_hero: String,
+    pub current_hero_index: usize,
+    pub total_heroes: usize,
+    pub current_item: String,
+    pub current_item_index: usize,
+    pub total_items: usize,
+    pub completed: bool,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn export_heroes_bulk(
+    heroes: Vec<BulkExportHero>,
+    output_dir: String,
+    include_avatars: bool,
+    include_skins: bool,
+) -> Result<Vec<String>, String> {
+    use base64::{engine::general_purpose, Engine as _};
+    use std::fs;
+
+    println!(
+        "[Bulk Export] Starting bulk export for {} heroes to: {}",
+        heroes.len(),
+        output_dir
+    );
+
+    // Create main output directory
+    fs::create_dir_all(&output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let mut exported_paths = Vec::new();
+    let total_heroes = heroes.len();
+
+    for (hero_index, hero) in heroes.iter().enumerate() {
+        println!(
+            "[Bulk Export] Processing hero {}/{}: {} ({})",
+            hero_index + 1,
+            total_heroes,
+            hero.name,
+            hero.id
+        );
+
+        // Sanitize hero name for filesystem
+        let sanitized_name = hero
+            .name
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect::<String>()
+            .replace(' ', "_");
+
+        // Create hero-specific directory
+        let hero_dir = format!("{}/{}_{}", output_dir, sanitized_name, hero.id);
+        fs::create_dir_all(&hero_dir)
+            .map_err(|e| format!("Failed to create hero directory: {}", e))?;
+
+        // Export avatar if requested and available
+        if include_avatars {
+            if let Some(avatar_data) = &hero.avatar {
+                let base64_clean = if avatar_data.starts_with("data:image/png;base64,") {
+                    &avatar_data[22..]
+                } else {
+                    avatar_data
+                };
+
+                match general_purpose::STANDARD.decode(base64_clean) {
+                    Ok(image_bytes) => {
+                        let avatar_filename = format!("{}_avatar.png", sanitized_name);
+                        let avatar_path = format!("{}/{}", hero_dir, avatar_filename);
+
+                        match fs::write(&avatar_path, image_bytes) {
+                            Ok(_) => {
+                                println!("[Bulk Export] Exported avatar: {}", avatar_path);
+                                exported_paths.push(avatar_path);
+                            }
+                            Err(e) => {
+                                println!(
+                                    "[Bulk Export] Failed to write avatar for {}: {}",
+                                    hero.name, e
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!(
+                            "[Bulk Export] Failed to decode avatar for {}: {}",
+                            hero.name, e
+                        );
+                    }
+                }
+            }
+        }
+
+        // Export skins if requested and available
+        if include_skins {
+            if let Some(skins) = &hero.skins {
+                for skin in skins {
+                    let base64_clean = if skin.image_data.starts_with("data:image/png;base64,") {
+                        &skin.image_data[22..]
+                    } else {
+                        &skin.image_data
+                    };
+
+                    match general_purpose::STANDARD.decode(base64_clean) {
+                        Ok(image_bytes) => {
+                            let skin_info = if let Some(color) = &skin.color_id {
+                                format!("skin_{}_{}", skin.skin_id, color)
+                            } else {
+                                format!("skin_{}", skin.skin_id)
+                            };
+
+                            let skin_filename = format!("{}_{}.png", sanitized_name, skin_info);
+                            let skin_path = format!("{}/{}", hero_dir, skin_filename);
+
+                            match fs::write(&skin_path, image_bytes) {
+                                Ok(_) => {
+                                    println!("[Bulk Export] Exported skin: {}", skin_path);
+                                    exported_paths.push(skin_path);
+                                }
+                                Err(e) => {
+                                    println!(
+                                        "[Bulk Export] Failed to write skin for {}: {}",
+                                        hero.name, e
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!(
+                                "[Bulk Export] Failed to decode skin for {}: {}",
+                                hero.name, e
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    println!(
+        "[Bulk Export] Completed bulk export. Exported {} files",
+        exported_paths.len()
+    );
+
+    Ok(exported_paths)
+}
+
+pub fn yaml_to_json(yaml: &Yaml) -> Result<Value, String> {
+    match yaml {
+        Yaml::Real(s) => s.parse::<f64>().map(Value::from).map_err(|e| e.to_string()),
+        Yaml::Integer(i) => Ok(Value::from(*i)),
+        Yaml::String(s) => Ok(Value::from(s.clone())),
+        Yaml::Boolean(b) => Ok(Value::from(*b)),
+        Yaml::Array(arr) => {
+            let json_arr: Result<Vec<Value>, _> = arr.iter().map(yaml_to_json).collect();
+            json_arr.map(Value::from)
+        }
+        Yaml::Hash(hash) => {
+            let mut json_obj = serde_json::Map::new();
+            for (key, value) in hash.iter() {
+                let key_str = match key {
+                    Yaml::String(s) => s.clone(),
+                    _ => format!("{:?}", key),
+                };
+                json_obj.insert(key_str, yaml_to_json(value)?);
+            }
+            Ok(Value::Object(json_obj))
+        }
+        Yaml::Alias(_) => Err("YAML aliases not supported".to_string()),
+        Yaml::Null => Ok(Value::Null),
+        Yaml::BadValue => Err("Bad YAML value".to_string()),
+        Yaml::Original(_) => Err("Original YAML value not supported".to_string()),
+    }
 }

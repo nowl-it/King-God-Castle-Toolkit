@@ -1,8 +1,14 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { CogIcon } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 export default function NotFound() {
+	const router = useRouter();
+	const { t } = useTranslation();
+
 	return (
 		<div className='flex flex-col items-center justify-center px-6'>
 			<div className='max-w-md text-center'>
@@ -13,12 +19,10 @@ export default function NotFound() {
 				</div>
 
 				<h1 className='text-primary mb-4 text-8xl font-extrabold'>404</h1>
-				<h2 className='mb-2 text-2xl font-semibold'>Trang không tìm thấy</h2>
-				<p className='text-primary/80 mb-6'>
-					Rất tiếc, trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.
-				</p>
-				<Button variant='outline' size='lg'>
-					<Link href='/'>Quay về trang chủ</Link>
+				<h2 className='mb-2 text-2xl font-semibold'>{t('pages.notFound.title')}</h2>
+				<p className='text-primary/80 mb-6'>{t('pages.notFound.description')}</p>
+				<Button variant='outline' size='lg' onClick={() => router.back()}>
+					{t('pages.notFound.backHome')}
 				</Button>
 			</div>
 		</div>

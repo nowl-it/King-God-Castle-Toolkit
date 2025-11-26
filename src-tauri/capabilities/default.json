@@ -16,6 +16,28 @@
 					"url": "https://*/*"
 				}
 			]
+		},
+		"shell:default",
+		"shell:allow-open",
+		{
+			"identifier": "shell:allow-execute",
+			"allow": [
+				{
+					"name": "asset-ripper-linux-x64",
+					"cmd": "binaries/asset-ripper/linux-x64/AssetRipper.GUI.Free",
+					"args": true
+				},
+				{
+					"name": "asset-ripper-win-x64",
+					"cmd": "binaries/asset-ripper/win-x64/AssetRipper.GUI.Free.exe",
+					"args": true
+				},
+				{
+					"name": "apkeep",
+					"cmd": "binaries/apkeep",
+					"args": true
+				}
+			]
 		}
 	]
 }
