@@ -1,6 +1,10 @@
-import { load } from '@tauri-apps/plugin-store';
-import { create } from 'zustand';
-import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
+import { load } from "@tauri-apps/plugin-store";
+import { create } from "zustand";
+import {
+	createJSONStorage,
+	persist,
+	type StateStorage,
+} from "zustand/middleware";
 
 interface AppHistoryState {
 	// State
@@ -14,8 +18,8 @@ interface AppHistoryState {
 const storage: StateStorage = {
 	getItem: async (name: string): Promise<string | null> => {
 		try {
-			if (typeof window === 'undefined') return null; // Ensure this runs only in Tauri environment
-			const store = await load('history.json');
+			if (typeof window === "undefined") return null; // Ensure this runs only in Tauri environment
+			const store = await load("history.json");
 			const data = await store.get<string>(name);
 			return data || null;
 		} catch (error) {
@@ -25,7 +29,7 @@ const storage: StateStorage = {
 	},
 	setItem: async (name: string, value: string): Promise<void> => {
 		try {
-			const store = await load('history.json');
+			const store = await load("history.json");
 			await store.set(name, value);
 			await store.save();
 		} catch (error) {
@@ -34,7 +38,7 @@ const storage: StateStorage = {
 	},
 	removeItem: async (name: string): Promise<void> => {
 		try {
-			const store = await load('history.json');
+			const store = await load("history.json");
 			await store.delete(name);
 			await store.save();
 		} catch (error) {
@@ -45,13 +49,13 @@ const storage: StateStorage = {
 
 export const useAppHistoryStore = create<AppHistoryState>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			project: null,
 			setProject: (project: string | null) => set({ project }),
 		}),
 		{
-			name: 'app-history-store',
+			name: "app-history-store",
 			storage: createJSONStorage(() => storage),
-		}
-	)
+		},
+	),
 );

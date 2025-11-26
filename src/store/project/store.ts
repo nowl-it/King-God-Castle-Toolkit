@@ -1,16 +1,17 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { useAppHistoryStore } from '../app/history';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { useAppHistoryStore } from "../app/history";
 
 export interface Hero {
 	id: string;
 	name: string;
 	folderName: string;
 	folderPath: string;
+	isGodSkin: boolean; // Whether this hero is a "God" skin
 	avatar?: string; // Base64 encoded cropped image
 	avatarPath?: string; // Path to the original Unit_<id>.png file
 	assetPath?: string; // Path to the Unit_<id>_0.asset file
-	avatarType?: 'cropped' | 'full'; // Type of avatar: cropped from asset or full image
+	avatarType?: "cropped" | "full"; // Type of avatar: cropped from asset or full image
 	lastModified?: number; // Timestamp for cache invalidation
 	skins?: HeroSkin[]; // Available skins for this hero
 	selectedSkin?: string; // Currently selected skin ID (undefined = default)
@@ -21,6 +22,7 @@ export interface HeroSkin {
 	id: string; // Skin ID (e.g., "01", "99")
 	name?: string; // Display name for the skin
 	isDefault?: boolean; // Whether this is the default skin (id = "99")
+	isGodSkin?: boolean; // Whether this skin is a "God" skin
 	colors?: string[]; // Available color IDs for multi-color skins
 	selectedColor?: string; // Currently selected color for this skin
 }
@@ -53,11 +55,16 @@ export type ProjectActions = {
 export type ProjectStore = ProjectState & ProjectActions;
 
 export const initProjectStore = (): ProjectState => {
-	return { path: '', selectedHero: null, heroesCache: {}, heroesLoading: false };
+	return {
+		path: "",
+		selectedHero: null,
+		heroesCache: {},
+		heroesLoading: false,
+	};
 };
 
 export const defaultInitState: ProjectState = {
-	path: '',
+	path: "",
 	selectedHero: null,
 	heroesCache: {},
 	heroesLoading: false,
@@ -78,7 +85,7 @@ export const useProjectStore = create<ProjectStore>()(
 			setSelectedHero: (hero: Hero | null) => set({ selectedHero: hero }),
 			setHeroesLoading: (loading: boolean) => set({ heroesLoading: loading }),
 			cacheHero: (heroId: string, hero: Hero, avatarProcessed = false) => {
-				set(state => ({
+				set((state) => ({
 					heroesCache: {
 						...state.heroesCache,
 						[heroId]: {
@@ -102,8 +109,8 @@ export const useProjectStore = create<ProjectStore>()(
 			clearHeroesCache: () => set({ heroesCache: {} }),
 		}),
 		{
-			name: 'project-storage',
+			name: "project-storage",
 			storage: createJSONStorage(() => sessionStorage),
-		}
-	)
+		},
+	),
 );

@@ -1,18 +1,18 @@
-import { load } from '@tauri-apps/plugin-store';
-import { create } from 'zustand';
-import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
+import { load } from "@tauri-apps/plugin-store";
+import { create } from "zustand";
+import {
+	createJSONStorage,
+	persist,
+	type StateStorage,
+} from "zustand/middleware";
 
-interface AppSettingState {
-	// State
-	// Actions
-	// Internal helpers
-}
+type AppSettingState = object;
 
 // Create Tauri-compatible storage that handles async operations
 const storage: StateStorage = {
 	getItem: async (name: string): Promise<string | null> => {
 		try {
-			const store = await load('setting.json');
+			const store = await load("setting.json");
 			const data = await store.get<string>(name);
 			return data || null;
 		} catch (error) {
@@ -22,7 +22,7 @@ const storage: StateStorage = {
 	},
 	setItem: async (name: string, value: string): Promise<void> => {
 		try {
-			const store = await load('setting.json');
+			const store = await load("setting.json");
 			await store.set(name, value);
 			await store.save();
 		} catch (error) {
@@ -31,7 +31,7 @@ const storage: StateStorage = {
 	},
 	removeItem: async (name: string): Promise<void> => {
 		try {
-			const store = await load('setting.json');
+			const store = await load("setting.json");
 			await store.delete(name);
 			await store.save();
 		} catch (error) {
@@ -41,8 +41,8 @@ const storage: StateStorage = {
 };
 
 export const useAppSettingStore = create<AppSettingState>()(
-	persist((set, get) => ({}), {
-		name: 'app-setting-store',
+	persist(() => ({}), {
+		name: "app-setting-store",
 		storage: createJSONStorage(() => storage),
-	})
+	}),
 );

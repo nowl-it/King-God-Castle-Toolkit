@@ -1,0 +1,146 @@
+{
+	"metadata": {
+		"appName": "King God Castle Toolkit",
+		"appDescription": "Công cụ hỗ trợ cho cộng đồng King God Castle Việt Nam"
+	},
+	"menubar": {
+		"file": "Tệp",
+		"tool": "Công cụ",
+		"help": "Trợ giúp",
+		"edit": "Sửa",
+		"view": "Xem",
+		"language": "Ngôn ngữ",
+		"openProject": "Mở dự án...",
+		"installGame": "Tải game",
+		"convertToUnity": "Chuyển đổi thành dự án Unity",
+		"documentation": "Tài liệu",
+		"reportIssue": "Báo cáo lỗi",
+		"about": "Giới thiệu",
+		"nothing": "Chưa có gì ở đây..."
+	},
+	"common": {
+		"loading": "Đang tải...",
+		"error": "Lỗi",
+		"retry": "Thử lại",
+		"cancel": "Hủy",
+		"confirm": "Xác nhận",
+		"save": "Lưu",
+		"back": "Quay lại",
+		"next": "Tiếp theo",
+		"previous": "Trước",
+		"close": "Đóng",
+		"open": "Mở",
+		"select": "Chọn",
+		"remove": "Xóa",
+		"delete": "Xóa",
+		"edit": "Sửa",
+		"create": "Tạo",
+		"update": "Cập nhật",
+		"version": "Phiên bản",
+		"file": "Tệp",
+		"folder": "Thư mục",
+		"application": "Ứng dụng",
+		"notSelected": "Chưa chọn"
+	},
+	"pages": {
+		"notFound": {
+			"title": "Không tìm thấy trang",
+			"description": "Rất tiếc, trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.",
+			"backHome": "Quay về trang chủ"
+		},
+		"about": {
+			"title": "Giới thiệu",
+			"description": "Công cụ hỗ trợ cho cộng đồng King God Castle Việt Nam.",
+			"toolDescription": "Tool hỗ trợ tải, chuyển đổi, quản lý và chia sẻ tài nguyên cho cộng đồng King God Castle.",
+			"contributionText": "Mọi đóng góp, phản hồi hoặc ý tưởng phát triển xin gửi về các kênh bên dưới.",
+			"copyright": "© {{year}} King God Castle Toolkit",
+			"dev_by": "Được phát triển bởi",
+			"dev_desc": "Chỉ đơn giản là một lập trình viên."
+		},
+		"install": {
+			"title": "Install Toolkit",
+			"description": "Tải game King God Castle",
+			"alreadyHaveGame": "Tôi đã tải game",
+			"versionLabel": "Version ({count} available)",
+			"selectVersion": "Select a version",
+			"downloadMoreVersions": "Tải thêm phiên bản khác",
+			"saveLocation": "Lưu tại: {path}"
+		},
+		"convert": {
+			"title": "Convert to Unity",
+			"description": "Chuyển đổi game từ XAPK sang Unity",
+			"alreadyInstalled": "Tôi đã tải game",
+			"importantNotes": "Lưu ý quan trọng",
+			"note1": "Không **can thiệp** vào quá trình tải xuống; không để máy của bạn **ngủ hoặc tắt màn hình**.",
+			"note2": "Quá trình chuyển đổi có thể mất từ **15 đến 45 phút**, tùy thuộc vào **hiệu suất máy tính** của bạn.",
+			"note3": "**Không chèn/chạy bất kỳ phần mềm can thiệp** nào vào quá trình chuyển đổi.",
+			"selectApplication": "Chọn ứng dụng (.xapk)",
+			"selectFolder": "Chọn thư mục",
+			"notSelectedApp": "Chưa chọn ứng dụng",
+			"notSelectedFolder": "Chưa chọn thư mục",
+			"converting": "Đang chuyển đổi...",
+			"convert": "Chuyển đổi"
+		}
+	},
+	"editor": {
+		"explorer": {
+			"title": "Trình duyệt"
+		},
+		"heroes": {
+			"title": "Tướng",
+			"loading": "Đang tải danh sách tướng..."
+		},
+		"relic": {
+			"title": "Relic Tools",
+			"description": "Tools for working with relic game data",
+			"oldFormats": "Old Formats",
+			"oldFormatsDesc": "Support relic files",
+			"converters": "Converters",
+			"convertersDesc": "Convert old to new",
+			"migration": "Migration",
+			"migrationDesc": "Data migration tools",
+			"fileConverter": "File Converter",
+			"fileConverterDesc": "Convert old game files to new format",
+			"selectRelicFiles": "Select Relic Files",
+			"supportedFormats": "Supported: .dat, .old, .relic",
+			"dataMigration": "Data Migration",
+			"dataMigrationDesc": "Migrate save data and configurations",
+			"startMigration": "Start Migration",
+			"backupNote": "Backup will be created automatically"
+		},
+		"dominion": {
+			"title": "Dominion Tools",
+			"description": "Tools for working with dominion game data",
+			"oldFormats": "Old Formats",
+			"oldFormatsDesc": "Support dominion files",
+			"converters": "Converters",
+			"convertersDesc": "Convert old to new",
+			"migration": "Migration",
+			"migrationDesc": "Data migration tools",
+			"fileConverter": "File Converter",
+			"fileConverterDesc": "Convert old game files to new format",
+			"selectDominionFiles": "Select Dominion Files",
+			"supportedFormats": "Supported: .dat, .old, .dominion",
+			"dataMigration": "Data Migration",
+			"dataMigrationDesc": "Migrate save data and configurations",
+			"startMigration": "Start Migration",
+			"backupNote": "Backup will be created automatically"
+		},
+		"documentation": {
+			"title": "Documentation",
+			"description": "Learn how to use the toolkit and its features",
+			"gettingStarted": "Getting Started",
+			"gettingStartedDesc": "Basic guide to start using the toolkit",
+			"faq": "FAQ",
+			"faqDesc": "Frequently Asked Questions",
+			"communityGuidelines": "Community Guidelines",
+			"communityGuidelinesDesc": "Rules and guidelines for community contributions",
+			"advancedFeatures": "Advanced Features",
+			"advancedFeaturesDesc": "In-depth look at advanced toolkit features"
+		},
+		"test-features": {
+			"title": "Test Features",
+			"description": "Try out experimental features and provide feedback"
+		}
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"i18n-ally.localesPaths": ["messages", "public/locales"],
+	"i18n-ally.keystyle": "flat",
+	"i18n-ally.extract.ignored": ["noopener noreferrer", "noopener noreferrer"],
+	"i18n-ally.extract.ignoredByFiles": {
+		"src/app/about/page.tsx": ["nowl GitHub"]
+	}
+}

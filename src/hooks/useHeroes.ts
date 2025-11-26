@@ -1,10 +1,10 @@
 'use client';
 
-import type { Hero } from '@/store/project/store';
+import type { Hero, HeroSkin } from '@/store/project/store';
 import { useProjectStore } from '@/store/project/store';
 import { log } from '@/utils/logger';
 import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface HeroesState {
 	heroes: Hero[];
@@ -38,7 +38,7 @@ export function useHeroes() {
 	});
 
 	// Parse hero folder name to extract ID and name
-	const parseHeroFolder = (folderName: string): { id: string; name: string } | null => {
+	const parseHeroFolder = useCallback((folderName: string): { id: string; name: string } | null => {
 		// Pattern: Fx_<hero_id> (<hero_name>)
 		// Example: Fx_001 (Knight), Fx_002 (Archer)
 		const match = folderName.match(/^Fx_(\d+)\s*\(([^)]+)\)$/);
@@ -49,37 +49,40 @@ export function useHeroes() {
 			};
 		}
 		return null;
-	};
+	}, []);
 
 	// Convert hero_id to new format for avatar path
 	// Logic: remove first and last digit, keep middle digits
-	const getAvatarHeroId = (heroId: string): string => {
+	const getAvatarHeroId = useCallback((heroId: string): string => {
 		if (heroId.length <= 2) {
 			// If ID is too short, return as is
 			return heroId;
 		}
 		// Remove first and last character, keep middle part
 		return heroId.slice(1, -1);
-	};
+	}, []);
 
 	// Discover available skins for a hero (including multi-color support)
-	const discoverHeroSkins = async (
-		hero: Hero,
-		projectPath: string
-	): Promise<import('@/store/project/store').HeroSkin[]> => {
+	const discoverHeroSkins = async (hero: Hero, projectPath: string): Promise<HeroSkin[]> => {
 		try {
 			// Look for skins in the Unit Image directory first
-			const unitImageDir = `${projectPath}/ExportedProject/Assets/00_Unit/#Image`;
+			const unitImageDir = `${projectPath}/Assets/00_Unit/#Image`;
 
 			// Check if the directory exists
-			const exists = await invoke<boolean>('check_path_exists', { path: unitImageDir });
+			const exists = await invoke<boolean>('check_path_exists', {
+				path: unitImageDir,
+			});
 			if (!exists) {
 				log.hero.asset(hero.id, `Unit Image directory not found: ${unitImageDir}`);
 				return [];
 			}
 
-			const files = await invoke<string[]>('read_directory', { path: unitImageDir });
-			const skinMap: { [skinId: string]: { colors: Set<string>; isDefault: boolean } } = {};
+			const files = await invoke<string[]>('read_directory', {
+				path: unitImageDir,
+			});
+			const skinMap: {
+				[skinId: string]: { colors: Set<string>; isDefault: boolean };
+			} = {};
 
 			/**
 			 * Look for skin files in Unit Image directory
@@ -88,7 +91,7 @@ export function useHeroes() {
 			 * - Unit_${heroId}_${skinId}_${colorId}.png (multi-color skin)
 			 * - Unit_${heroId}_99_${colorId}.png (multi-color default skin)
 			 */
-			const singleColorPattern = new RegExp(`^Unit_${hero.id}_(\\d+)\\.png$`);
+			const singleColorPattern = new RegExp(`^Unit_${hero.id}_(\\d+[a-z]?)\\.png$`);
 			const multiColorPattern = new RegExp(`^Unit_${hero.id}_(\\d+)_(\\d+)\\.png$`);
 
 			for (const file of files) {
@@ -98,6 +101,7 @@ export function useHeroes() {
 
 				// Check for multi-color skin first
 				const multiColorMatch = file.match(multiColorPattern);
+
 				if (multiColorMatch) {
 					const skinId = multiColorMatch[1];
 					const colorId = multiColorMatch[2];
@@ -127,14 +131,54 @@ export function useHeroes() {
 				}
 			}
 
+			// Find god skins by skinId pattern (e.g. 001a, 002b, etc.), normalize by removing trailing letter, and deduplicate
+			const godSkins = Array.from(
+				new Set(
+					Object.keys(skinMap)
+						.filter((skinId) => /[a-z]$/i.test(skinId))
+						.map((skinId) => skinId.replace(/[a-z]$/i, ''))
+				)
+			);
+
+			// Group duplicate skins (e.g. 001a and 001b) to one
+			const groupedSkinMap: {
+				[skinId: string]: {
+					colors: Set<string>;
+					isDefault: boolean;
+					isGodSkin: boolean;
+				};
+			} = {};
+			for (const [skinId, data] of Object.entries(skinMap)) {
+				// Normalize skin ID by removing trailing letters (e.g. 001a -> 001)
+				const normalizedSkinId = skinId.replace(/[a-z]$/i, '');
+
+				if (!groupedSkinMap[normalizedSkinId]) {
+					groupedSkinMap[normalizedSkinId] = {
+						colors: new Set(),
+						isDefault: data.isDefault,
+						isGodSkin: false,
+					};
+				}
+
+				// Merge colors
+				data.colors.forEach((color) => {
+					groupedSkinMap[normalizedSkinId].colors.add(color);
+				});
+
+				if (godSkins.includes(normalizedSkinId)) {
+					groupedSkinMap[normalizedSkinId].isGodSkin = true;
+				}
+			}
+
 			// Convert map to HeroSkin array
-			const skins: import('@/store/project/store').HeroSkin[] = Object.entries(skinMap).map(([skinId, data]) => {
+			const skins: HeroSkin[] = Object.entries(groupedSkinMap).map(([skinId, data]) => {
 				const colors = Array.from(data.colors).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
 				return {
 					id: skinId,
 					name: data.isDefault ? 'Default' : `Skin ${skinId}`,
 					isDefault: data.isDefault,
+					isGodSkin: data.isGodSkin,
 					colors: colors.length > 0 ? colors : undefined,
 					selectedColor: colors.length > 0 ? colors[0] : undefined, // Default to first color
 				};
@@ -148,11 +192,12 @@ export function useHeroes() {
 			});
 
 			log.hero.asset(hero.id, `Found ${skins.length} skins`, {
-				skins: skins.map(s => ({
+				skins: skins.map((s) => ({
 					id: s.id,
 					isDefault: s.isDefault,
 					hasColors: !!s.colors,
 					colorCount: s.colors?.length || 0,
+					isGodSkin: s.isGodSkin,
 				})),
 				directory: unitImageDir,
 			});
@@ -172,13 +217,13 @@ export function useHeroes() {
 		colorId?: string
 	): Promise<void> => {
 		try {
-			// Use new avatar path logic
-			const avatarHeroId = getAvatarHeroId(hero.id);
-
 			// Build asset path based on whether it's a skin or default
 			let assetFileName: string;
 			let useDefaultAvatar = false;
 			let unitImageFileName: string;
+
+			// Use new avatar path logic
+			const avatarHeroId = getAvatarHeroId(hero.id);
 
 			if (skinId) {
 				// For skin avatar, try skin-specific avatar first
@@ -193,10 +238,12 @@ export function useHeroes() {
 					unitImageFileName = `Unit_${hero.id}_${skinId}.png`;
 				}
 
-				const skinAssetPath = `${projectPath}/ExportedProject/Assets/02_UI/UI_Avatar/${assetFileName}`;
+				const skinAssetPath = `${projectPath}/Assets/02_UI/UI_Avatar/${assetFileName}`;
 
 				// Check if skin avatar exists
-				const skinAssetExists = await invoke<boolean>('check_path_exists', { path: skinAssetPath });
+				const skinAssetExists = await invoke<boolean>('check_path_exists', {
+					path: skinAssetPath,
+				});
 				if (!skinAssetExists) {
 					log.hero.skin(hero.id, skinId, 'Skin avatar not found, using default avatar');
 					useDefaultAvatar = true;
@@ -214,7 +261,7 @@ export function useHeroes() {
 				}
 			}
 
-			const assetPath = `${projectPath}/ExportedProject/Assets/02_UI/UI_Avatar/${assetFileName}`;
+			const assetPath = `${projectPath}/Assets/02_UI/UI_Avatar/${assetFileName}`;
 
 			log.hero.asset(hero.id, 'Looking for avatar asset', {
 				assetPath,
@@ -225,7 +272,9 @@ export function useHeroes() {
 			});
 
 			// Check if asset file exists
-			const assetExists = await invoke<boolean>('check_path_exists', { path: assetPath });
+			const assetExists = await invoke<boolean>('check_path_exists', {
+				path: assetPath,
+			});
 			if (!assetExists) {
 				log.hero.asset(hero.id, `Avatar asset file not found: ${assetPath}`);
 				// If even default asset not found and it's a skin request, skip
@@ -237,19 +286,25 @@ export function useHeroes() {
 			}
 
 			// Read the asset file to get the image information
-			const assetContent = await invoke<string>('read_text_file', { path: assetPath });
+			const assetContent = await invoke<string>('read_text_file', {
+				path: assetPath,
+			});
 
 			// For .asset files in UI_Avatar, we might need to parse differently
 			// Let's try to parse it and see what information we can extract
 			try {
-				const cropInfo = await invoke<AssetCropInfo>('parse_asset_file', { assetContent });
+				const cropInfo = await invoke<AssetCropInfo>('parse_asset_file', {
+					assetContent,
+				});
 
 				// Find the combined avatar texture file by pattern
-				const textureDir = `${projectPath}/ExportedProject/Assets/Texture2D`;
-				const textureFiles = await invoke<string[]>('read_directory', { path: textureDir });
+				const textureDir = `${projectPath}/Assets/Texture2D`;
+				const textureFiles = await invoke<string[]>('read_directory', {
+					path: textureDir,
+				});
 
 				// Look for file matching pattern: sactx-0-2048x1024-Uncompressed-UI_Avatar-<random_id>.png
-				const avatarTextureFile = textureFiles.find(file =>
+				const avatarTextureFile = textureFiles.find((file) =>
 					file.match(/^sactx-0-2048x1024-Uncompressed-UI_Avatar-[a-f0-9]+\.png$/)
 				);
 
@@ -263,14 +318,18 @@ export function useHeroes() {
 				log.hero.asset(hero.id, `Using combined texture: ${combinedTexturePath}`);
 
 				// Check if the combined texture file exists (should exist since we found it)
-				const textureExists = await invoke<boolean>('check_path_exists', { path: combinedTexturePath });
+				const textureExists = await invoke<boolean>('check_path_exists', {
+					path: combinedTexturePath,
+				});
 				if (!textureExists) {
 					log.hero.error(hero.id, `Combined avatar texture not found: ${combinedTexturePath}`);
 					return;
 				}
 
 				// Read the combined texture file
-				const imageBytes = await invoke<number[]>('read_file_as_bytes', { path: combinedTexturePath });
+				const imageBytes = await invoke<number[]>('read_file_as_bytes', {
+					path: combinedTexturePath,
+				});
 
 				log.hero.asset(hero.id, `Crop info for hero ${skinId ? `skin ${skinId}` : 'default'}`, cropInfo);
 
@@ -298,8 +357,10 @@ export function useHeroes() {
 					);
 
 					// Fallback to unit image file
-					const unitImagePath = `${projectPath}/ExportedProject/Assets/00_Unit/#Image/${unitImageFileName}`;
-					const unitImageExists = await invoke<boolean>('check_path_exists', { path: unitImagePath });
+					const unitImagePath = `${projectPath}/Assets/00_Unit/#Image/${unitImageFileName}`;
+					const unitImageExists = await invoke<boolean>('check_path_exists', {
+						path: unitImagePath,
+					});
 
 					if (unitImageExists) {
 						log.hero.asset(hero.id, `Fallback to unit image: ${unitImagePath}`);
@@ -335,23 +396,29 @@ export function useHeroes() {
 	};
 
 	// Load heroes from Assets/01_Fx/1_Hero/ directory
-	const loadHeroes = async () => {
+	const loadHeroes = async (): Promise<void> => {
 		if (!projectPath) {
-			setState(prev => ({ ...prev, heroes: [], error: 'No project selected' }));
+			setState((prev) => ({
+				...prev,
+				heroes: [],
+				error: 'No project selected',
+			}));
 			return;
 		}
 
-		setState(prev => ({ ...prev, loading: true, error: null }));
+		setState((prev) => ({ ...prev, loading: true, error: null }));
 		setHeroesLoading(true);
 
 		try {
-			const heroesPath = `${projectPath}/ExportedProject/Assets/01_Fx/1_Hero`;
+			const heroesPath = `${projectPath}/Assets/01_Fx/1_Hero`;
 			log.info('Loading heroes from path', 'Heroes', { heroesPath });
 
 			// Check if the heroes directory exists
-			const exists = await invoke<boolean>('check_path_exists', { path: heroesPath });
+			const exists = await invoke<boolean>('check_path_exists', {
+				path: heroesPath,
+			});
 			if (!exists) {
-				setState(prev => ({
+				setState((prev) => ({
 					...prev,
 					loading: false,
 					error: 'Heroes directory not found: Assets/01_Fx/1_Hero',
@@ -362,8 +429,13 @@ export function useHeroes() {
 			}
 
 			// Read directory contents
-			const entries = await invoke<string[]>('read_directory', { path: heroesPath });
-			log.debug('Directory entries found', 'Heroes', { entries, count: entries.length });
+			const entries = await invoke<string[]>('read_directory', {
+				path: heroesPath,
+			});
+			log.debug('Directory entries found', 'Heroes', {
+				entries,
+				count: entries.length,
+			});
 
 			// Filter and parse hero folders
 			const heroes: Hero[] = [];
@@ -372,7 +444,9 @@ export function useHeroes() {
 				const entryPath = `${heroesPath}/${entry}`;
 
 				// Check if it's a directory
-				const isDir = await invoke<boolean>('check_is_directory', { path: entryPath });
+				const isDir = await invoke<boolean>('check_is_directory', {
+					path: entryPath,
+				});
 				if (!isDir) continue;
 
 				// Parse hero info from folder name
@@ -392,6 +466,7 @@ export function useHeroes() {
 							name: heroInfo.name,
 							folderName: entry,
 							folderPath: entryPath,
+							isGodSkin: false,
 						};
 
 						// Discover available skins for this hero
@@ -411,11 +486,11 @@ export function useHeroes() {
 
 			log.info('Successfully loaded heroes', 'Heroes', {
 				count: heroes.length,
-				heroIds: heroes.map(h => h.id),
-				withSkins: heroes.filter(h => h.skins && h.skins.length > 0).length,
+				heroIds: heroes.map((h) => h.id),
+				withSkins: heroes.filter((h) => h.skins && h.skins.length > 0).length,
 			});
 
-			setState(prev => ({
+			setState((prev) => ({
 				...prev,
 				loading: false,
 				heroes,
@@ -424,7 +499,7 @@ export function useHeroes() {
 			setHeroesLoading(false);
 		} catch (error) {
 			log.error('Failed to load heroes', 'Heroes', error);
-			setState(prev => ({
+			setState((prev) => ({
 				...prev,
 				loading: false,
 				error: error instanceof Error ? error.message : 'Failed to load heroes',
@@ -452,7 +527,7 @@ export function useHeroes() {
 	const loadHeroAvatarById = async (heroId: string, forceReload = false) => {
 		if (!projectPath) return;
 
-		const hero = state.heroes.find(h => h.id === heroId);
+		const hero = state.heroes.find((h) => h.id === heroId);
 		if (!hero) return;
 
 		// Check cache first unless force reload
@@ -464,16 +539,19 @@ export function useHeroes() {
 			}
 		}
 
-		log.info('Loading/reloading avatar for hero', 'Heroes', { heroId, forceReload });
+		log.info('Loading/reloading avatar for hero', 'Heroes', {
+			heroId,
+			forceReload,
+		});
 		await loadHeroAvatar(hero, projectPath);
 
 		// Update cache
 		cacheHero(heroId, hero, !!hero.avatar);
 
 		// Update the state with the modified hero
-		setState(prev => ({
+		setState((prev) => ({
 			...prev,
-			heroes: prev.heroes.map(h => (h.id === heroId ? hero : h)),
+			heroes: prev.heroes.map((h) => (h.id === heroId ? hero : h)),
 		}));
 
 		// Update selected hero if it's the same one
@@ -486,13 +564,21 @@ export function useHeroes() {
 	const loadHeroSkin = async (heroId: string, skinId: string, colorId?: string) => {
 		if (!projectPath) return;
 
-		const hero = state.heroes.find(h => h.id === heroId);
+		const hero = state.heroes.find((h) => h.id === heroId);
 		if (!hero) {
-			log.error('Hero not found for skin loading', 'Heroes', { heroId, skinId, colorId });
+			log.error('Hero not found for skin loading', 'Heroes', {
+				heroId,
+				skinId,
+				colorId,
+			});
 			return;
 		}
 
-		log.info('Loading skin for hero', 'Heroes', { heroId, skinId, colorId });
+		log.info('Loading skin for hero', 'Heroes', {
+			heroId,
+			skinId,
+			colorId,
+		});
 
 		// Load avatar with skin and color
 		await loadHeroAvatar(hero, projectPath, skinId, colorId);
@@ -500,10 +586,11 @@ export function useHeroes() {
 		// Update selected skin and color
 		hero.selectedSkin = skinId;
 		hero.selectedColor = colorId;
+		hero.isGodSkin = hero.skins?.some((s) => s.id === skinId && s.isGodSkin) || false;
 
 		// Update the skin's selected color if it exists
 		if (hero.skins) {
-			const skin = hero.skins.find(s => s.id === skinId);
+			const skin = hero.skins.find((s) => s.id === skinId);
 			if (skin) {
 				skin.selectedColor = colorId;
 			}
@@ -513,9 +600,9 @@ export function useHeroes() {
 		cacheHero(heroId, hero, !!hero.avatar);
 
 		// Update the state with the modified hero
-		setState(prev => ({
+		setState((prev) => ({
 			...prev,
-			heroes: prev.heroes.map(h => (h.id === heroId ? hero : h)),
+			heroes: prev.heroes.map((h) => (h.id === heroId ? hero : h)),
 		}));
 
 		// Update selected hero if it's the same one
@@ -533,9 +620,11 @@ export function useHeroes() {
 	const resetToDefaultSkin = async (heroId: string) => {
 		if (!projectPath) return;
 
-		const hero = state.heroes.find(h => h.id === heroId);
+		const hero = state.heroes.find((h) => h.id === heroId);
 		if (!hero) {
-			log.error('Hero not found for default skin reset', 'Heroes', { heroId });
+			log.error('Hero not found for default skin reset', 'Heroes', {
+				heroId,
+			});
 			return;
 		}
 
@@ -552,9 +641,9 @@ export function useHeroes() {
 		cacheHero(heroId, hero, !!hero.avatar);
 
 		// Update the state with the modified hero
-		setState(prev => ({
+		setState((prev) => ({
 			...prev,
-			heroes: prev.heroes.map(h => (h.id === heroId ? hero : h)),
+			heroes: prev.heroes.map((h) => (h.id === heroId ? hero : h)),
 		}));
 
 		// Update selected hero if it's the same one
@@ -564,8 +653,9 @@ export function useHeroes() {
 	};
 
 	// Load heroes when project path changes
+	// biome-ignore lint: react-hooks/exhaustive-deps
 	useEffect(() => {
-		loadHeroes();
+		void loadHeroes();
 	}, [projectPath]);
 
 	return {
@@ -581,5 +671,6 @@ export function useHeroes() {
 		resetToDefaultSkin,
 		clearCache: clearHeroesCache,
 		isCacheValid,
+		discoverHeroSkins,
 	};
 }
