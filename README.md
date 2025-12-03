@@ -1,6 +1,6 @@
 # King God Castle Toolkit
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
 
@@ -12,37 +12,52 @@ King God Castle Toolkit is a powerful utility designed to enhance your experienc
 
 ### 🛠️ Game Tools
 
-- **Game Installer**: Download specific versions of King God Castle directly.
-- **C2U Converter**: Convert game assets to Unity projects for analysis and modification.
+- **Game Installer**: Download specific versions of King God Castle directly through an intuitive interface
+- **C2U Converter**: Convert game assets (XAPK) to Unity projects for analysis and modification
+- **Multi-language Support**: Full internationalization with Vietnamese and English interfaces
 
 ### 🎯 Technical Features
 
 - **Auto-Updates**: Cryptographically signed update system via GitHub Releases
 - **Cross-Platform Support**: Native desktop apps for Linux and Windows
 - **Modern Architecture**: Next.js 15 + Tauri v2 with TypeScript and Rust
+- **Professional UI**: Clean sidebar navigation with responsive design using shadcn/ui components
+- **Real-time Updates**: File watcher integration for monitoring asset changes
 
 ## Project Structure
 
 ```text
 King-God-Castle-Toolkit/
-├── src/                # Source code for the application
-│   ├── app/           # Next.js app directory
-│   ├── components/    # Reusable UI components and providers
-│   ├── hooks/         # Custom React hooks
-│   ├── lib/           # Utility libraries and helpers
-│   ├── store/         # Zustand state management with persistence
-│   ├── styles/        # Global CSS and Tailwind configurations
-│   ├── types/         # TypeScript type definitions
-│   └── utils/         # Utility functions, constants, and logging
-├── src-tauri/          # Tauri Rust backend
-│   ├── src/           # Rust source code
-│   ├── binaries/      # External binaries (AssetRipper, etc.)
-│   ├── capabilities/  # Tauri security capabilities
-│   └── icons/         # Application icons for all platforms
-├── public/             # Static assets and JSON data
-├── .github/            # GitHub workflows, Dependabot, and documentation
-├── .vscode/            # VS Code workspace configuration
-└── package.json        # Project dependencies and scripts
+├── src/                    # Source code for the application
+│   ├── app/               # Next.js app directory with App Router
+│   │   ├── (toolkit)/    # Route group with shared layout
+│   │   │   ├── install/  # Game download page
+│   │   │   ├── convert/  # Asset conversion page
+│   │   │   └── layout.tsx # Shared sidebar layout
+│   │   ├── layout.tsx    # Root layout with providers
+│   │   └── page.tsx      # Home page with redirect
+│   ├── components/        # Reusable UI components and providers
+│   │   ├── ui/           # shadcn/ui components
+│   │   └── providers/    # React context providers
+│   ├── hooks/            # Custom React hooks (useTranslation, useHeroes, etc.)
+│   ├── lib/              # Utility libraries and helpers
+│   ├── store/            # Zustand state management with persistence
+│   ├── styles/           # Global CSS and Tailwind configurations
+│   ├── types/            # TypeScript type definitions
+│   └── utils/            # Utility functions, constants, and logging
+├── src-tauri/             # Tauri Rust backend
+│   ├── src/              # Rust source code
+│   │   ├── unity/        # Unity asset parsing modules
+│   │   ├── c2u.rs        # XAPK to Unity converter
+│   │   └── lib.rs        # Tauri command registrations
+│   ├── binaries/         # External binaries (AssetRipper, etc.)
+│   ├── capabilities/     # Tauri security capabilities
+│   └── icons/            # Application icons for all platforms
+├── public/                # Static assets and JSON data
+│   └── locales/          # i18n translation files (vi.json, en.json)
+├── .github/               # GitHub workflows, Dependabot, and documentation
+├── .vscode/               # VS Code workspace configuration
+└── package.json           # Project dependencies and scripts
 ```
 
 ## Technology Stack
@@ -51,6 +66,8 @@ King-God-Castle-Toolkit/
 - **UI Components**: shadcn/ui, Radix UI primitives, Lucide icons
 - **State Management**: Zustand with persistence, TanStack React Query
 - **Desktop App**: Tauri v2.7.0 with Rust backend
+- **Internationalization**: react-i18next with custom hooks for multi-language support
+- **Routing**: Next.js App Router with parallel routes and route groups
 - **Package Manager**: PNPM with workspace configuration
 - **Development**: Vitest for testing, Biome + ESLint for linting
 - **Deployment**: GitHub Actions with multi-platform builds and auto-updates
@@ -87,10 +104,10 @@ King-God-Castle-Toolkit/
 ### Development Commands
 
 ```bash
-# Start Next.js development server with Turbopack
+# Start Next.js development server with Turbopack (localhost:3000)
 pnpm dev
 
-# Start Tauri desktop app in development mode
+# Start Tauri desktop app in development mode with hot reload
 pnpm tauri dev
 
 # Run tests with Vitest
@@ -102,6 +119,29 @@ pnpm lint
 # Auto-fix linting issues
 pnpm fix
 ```
+
+### Application Features
+
+#### Game Installer (`/install`)
+
+- Browse and select from available King God Castle versions
+- Download XAPK files with progress tracking
+- Choose custom save location
+- Automatic navigation to converter after successful download
+
+#### Asset Converter (`/convert`)
+
+- Select XAPK file (automatically pre-filled from installer)
+- Choose output directory for Unity project
+- Real-time conversion progress with AssetRipper integration
+- System resource optimization warnings for Linux/macOS
+
+#### User Interface
+
+- Professional sidebar navigation with visual indicators
+- Language switcher (Tiếng Việt / English) with persistent selection
+- Real-time system status indicator
+- Responsive layout optimized for desktop application
 
 ### Production Build
 
@@ -150,13 +190,13 @@ The application includes built-in auto-update functionality using Tauri's update
     ```
 
 2. Configure GitHub repository secrets:
-   - `TAURI_SIGNING_PRIVATE_KEY`: Private key content for signing releases
-   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: Key password (if set during generation)
+    - `TAURI_SIGNING_PRIVATE_KEY`: Private key content for signing releases
+    - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: Key password (if set during generation)
 
 3. The updater automatically:
-   - Checks for updates when the app starts
-   - Downloads and verifies update signatures
-   - Prompts users to install available updates
+    - Checks for updates when the app starts
+    - Downloads and verifies update signatures
+    - Prompts users to install available updates
 
 ### Update Distribution
 
