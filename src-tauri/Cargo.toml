@@ -1,6 +1,6 @@
 [package]
 name = "kgc-toolkit"
-version = "0.0.3"
+version = "2.0.0"
 description = "King God Castle Toolkit"
 authors = ["nowl-it"]
 edition = "2021"
