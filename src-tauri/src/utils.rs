@@ -35,14 +35,14 @@ pub async fn get_app_versions(app_name: String) -> Result<Vec<String>, String> {
     println!("[Versions] Getting versions for app: {}", app_name);
 
     // Use external apkeep binary instead of library to avoid GLib-GIO issues
-    let apkeep_binary = if cfg!(target_os = "windows") {
+    const APKEEP_BINARY: &str = if cfg!(target_os = "windows") {
         "./binaries/apkeep.exe"
     } else {
         "./binaries/apkeep"
     };
 
     // Build apkeep command to list versions
-    let mut cmd = Command::new(apkeep_binary);
+    let mut cmd = Command::new(APKEEP_BINARY);
     cmd.arg("-a").arg(&app_name).arg("-l");
 
     println!("[Versions] Executing command: {:?}", cmd);
@@ -129,21 +129,21 @@ pub async fn download_app(
     }
 
     // Use external apkeep binary instead of library to avoid GLib-GIO issues
-    let apkeep_binary = if cfg!(target_os = "windows") {
+    const APKEEP_BINARY: &str = if cfg!(target_os = "windows") {
         "./binaries/apkeep.exe"
     } else {
         "./binaries/apkeep"
     };
 
     // Build apkeep command
-    let mut cmd = Command::new(apkeep_binary);
-
-    if let Some(ref v) = version {
+    let mut cmd = Command::new(APKEEP_BINARY);
+    cmd.arg("-a");
+    
+    if let Some(v) = version {
         // Use app_id@version format
-        let app_with_version = format!("{}@{}", app_name, v);
-        cmd.arg("-a").arg(&app_with_version);
+        cmd.arg(format!("{}@{}", app_name, v));
     } else {
-        cmd.arg("-a").arg(&app_name);
+        cmd.arg(&app_name);
     }
 
     cmd.arg(&out_path);
@@ -272,22 +272,18 @@ pub fn crop_image_from_bytes(
     // Get image dimensions
     let (img_width, img_height) = rgba_img.dimensions();
 
-    // Check if the crop region is within bounds before any calculations
+    // Validate crop region bounds
     if x >= img_width || y >= img_height || width == 0 || height == 0 {
         return Err(format!(
-            "Invalid crop region: x:{}, y:{}, width:{}, height:{} for image dimensions ({}x{})",
+            "Invalid crop region: x:{}, y:{}, width:{}, height:{} for image ({}x{})",
             x, y, width, height, img_width, img_height
         ));
     }
 
-    // Check if y + height would exceed image height (prevent overflow)
-    if y + height > img_height {
+    if y.checked_add(height).map_or(true, |sum| sum > img_height) {
         return Err(format!(
-            "Crop region exceeds image height: y:{} + height:{} = {} > img_height:{}",
-            y,
-            height,
-            y + height,
-            img_height
+            "Crop region exceeds image height: y:{} + height:{} > img_height:{}",
+            y, height, img_height
         ));
     }
 
@@ -505,17 +501,14 @@ pub async fn export_hero_avatar(
         .map_err(|e| format!("Failed to create output directory: {}", e))?;
 
     // Generate filename (sanitize hero name for filesystem)
-    let sanitized_name = hero_name
+    let sanitized_name: String = hero_name
         .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
-                c
-            } else {
-                '_'
-            }
+        .map(|c| match c {
+            c if c.is_ascii_alphanumeric() || c == '-' || c == '_' => c,
+            ' ' => '_',
+            _ => '_',
         })
-        .collect::<String>()
-        .replace(' ', "_");
+        .collect();
 
     let filename = format!("{}_avatar.png", sanitized_name);
     let output_path = format!("{}/{}", output_dir, filename);
@@ -567,17 +560,14 @@ pub async fn export_hero_skin_image(
         .map_err(|e| format!("Failed to create output directory: {}", e))?;
 
     // Generate filename (sanitize hero name for filesystem)
-    let sanitized_name = hero_name
+    let sanitized_name: String = hero_name
         .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
-                c
-            } else {
-                '_'
-            }
+        .map(|c| match c {
+            c if c.is_ascii_alphanumeric() || c == '-' || c == '_' => c,
+            ' ' => '_',
+            _ => '_',
         })
-        .collect::<String>()
-        .replace(' ', "_");
+        .collect();
 
     let filename = format!("{}_{}.png", sanitized_name, skin_info);
     let output_path = format!("{}/{}", output_dir, filename);
@@ -653,18 +643,15 @@ pub async fn export_heroes_bulk(
         );
 
         // Sanitize hero name for filesystem
-        let sanitized_name = hero
+        let sanitized_name: String = hero
             .name
             .chars()
-            .map(|c| {
-                if c.is_ascii_alphanumeric() || c == ' ' || c == '-' || c == '_' {
-                    c
-                } else {
-                    '_'
-                }
+            .map(|c| match c {
+                c if c.is_ascii_alphanumeric() || c == '-' || c == '_' => c,
+                ' ' => '_',
+                _ => '_',
             })
-            .collect::<String>()
-            .replace(' ', "_");
+            .collect();
 
         // Create hero-specific directory
         let hero_dir = format!("{}/{}_{}", output_dir, sanitized_name, hero.id);

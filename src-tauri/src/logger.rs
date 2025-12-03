@@ -53,25 +53,18 @@ pub async fn write_log_entry(entry: LogEntry) -> Result<(), String> {
         }
     }
 
-    // Format log entry
-    let log_line = format!(
-        "[{}] [{}] {}{}: {}{}{}\n",
-        entry.timestamp,
-        entry.level.to_uppercase(),
-        if entry.context.is_empty() { "" } else { "[" },
-        if entry.context.is_empty() {
-            ""
-        } else {
-            &entry.context
-        },
-        if entry.context.is_empty() { "" } else { "] " },
-        entry.message,
+    // Format log entry efficiently
+    let log_line = if entry.context.is_empty() {
         if entry.data.is_empty() {
-            String::new()
+            format!("[{}] [{}] {}\n", entry.timestamp, entry.level.to_uppercase(), entry.message)
         } else {
-            format!(" | Data: {}", entry.data)
+            format!("[{}] [{}] {} | Data: {}\n", entry.timestamp, entry.level.to_uppercase(), entry.message, entry.data)
         }
-    );
+    } else if entry.data.is_empty() {
+        format!("[{}] [{}] [{}] {}\n", entry.timestamp, entry.level.to_uppercase(), entry.context, entry.message)
+    } else {
+        format!("[{}] [{}] [{}] {} | Data: {}\n", entry.timestamp, entry.level.to_uppercase(), entry.context, entry.message, entry.data)
+    };
 
     // Write to file
     let mut file = OpenOptions::new()

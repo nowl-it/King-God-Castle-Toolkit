@@ -1,14 +1,11 @@
+use crate::get_asset_ripper;
 use std::{
     fs::{self, File},
     io::{self, BufReader},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
-
-
 use zip::ZipArchive;
-
-use crate::get_asset_ripper;
 
 #[tauri::command]
 pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
@@ -48,6 +45,8 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
         .split('@')
         .nth(1)
         .ok_or("Tên file không đúng định dạng <app_id>@<version>.xapk")?;
+
+    // Tạo thư mục output theo version
 
     // Tạo thư mục output theo version
     let output_path = base_output_path.join(version);
@@ -215,22 +214,12 @@ pub async fn c2u(app_path: String, out_path: String) -> Result<(), String> {
     println!("Input path: {:?}", base_assets_dir);
     println!("Output path: {:?}", final_output_dir);
 
-    let args = vec![
-        "--InputPath".to_string(),
-        base_assets_dir.to_string_lossy().to_string(),
-        "--OutputPath".to_string(),
-        final_output_dir.to_string_lossy().to_string(),
-    ];
-
-    let mut command;
-
-    if cfg!(target_os = "windows") {
-        command = Command::new(&asset_ripper_path);
-    } else {
-        command = Command::new(&asset_ripper_path);
-    }
-
-    command.args(&args);
+    let mut command = Command::new(&asset_ripper_path);
+    command
+        .arg("--InputPath")
+        .arg(base_assets_dir.as_os_str())
+        .arg("--OutputPath")
+        .arg(final_output_dir.as_os_str());
 
     println!("Command: {:?}", command);
 

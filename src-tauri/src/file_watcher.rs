@@ -164,12 +164,8 @@ pub async fn stop_watching(state: State<'_, WatcherState>) -> Result<(), String>
 
 async fn stop_watching_internal(state: &State<'_, WatcherState>) -> Result<(), String> {
     let watcher_state = state.inner();
-    let mut w = watcher_state.lock().unwrap();
-
-    if let Some(_watcher) = w.take() {
-        // Watcher will be dropped automatically
-    }
-
+    let mut w = watcher_state.lock().map_err(|e| format!("Lock error: {}", e))?;
+    w.take();
     Ok(())
 }
 
